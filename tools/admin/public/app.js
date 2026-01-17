@@ -53,8 +53,7 @@ function postMatches(p, q) {
 	const hay = [
 		p.slug,
 		p.title,
-		p.category,
-		...(p.tags || []),
+		...(p.categories || []),
 		p.description || '',
 	].join(' ').toLowerCase();
 	return hay.includes(q.toLowerCase());
@@ -71,7 +70,7 @@ function renderList() {
 			const active = p.slug === activeSlug ? 'active' : '';
 			const sub = [
 				formatDate(p.pubDate),
-				p.category ? p.category : '未分类',
+				p.categories?.length ? p.categories.join(', ') : '未分类',
 				p.draft ? '草稿' : '',
 			]
 				.filter(Boolean)
@@ -112,16 +111,14 @@ async function loadPost(slug) {
 	const title = data.frontmatter?.title || slug;
 	const pub = data.frontmatter?.pubDate ? formatDate(data.frontmatter.pubDate) : '';
 	const upd = data.frontmatter?.updatedDate ? formatDate(data.frontmatter.updatedDate) : '';
-	const category = data.frontmatter?.category || '未分类';
-	const tags = Array.isArray(data.frontmatter?.tags) ? data.frontmatter.tags : [];
+	const categories = Array.isArray(data.frontmatter?.categories) ? data.frontmatter.categories : [];
 
 	if ($vTitle) $vTitle.textContent = title;
 	if ($vSub) {
 		const parts = [];
 		if (pub) parts.push(`发布：${pub}`);
 		if (upd) parts.push(`更新：${upd}`);
-		parts.push(`分类：${category}`);
-		if (tags.length) parts.push(`标签：${tags.join(', ')}`);
+		parts.push(`分类：${categories.length ? categories.join(', ') : '未分类'}`);
 		$vSub.textContent = parts.join(' · ');
 	}
 
@@ -143,9 +140,9 @@ async function uploadMd(file) {
 	const form = new FormData();
 	form.append('file', file);
 	const title = $('upload-title')?.value?.trim?.() ?? '';
-	const category = $('upload-category')?.value?.trim?.() ?? '';
+	const categories = $('upload-categories')?.value?.trim?.() ?? '';
 	if (title) form.append('title', title);
-	if (category) form.append('category', category);
+	if (categories) form.append('categories', categories);
 	const resp = await fetch(baseUrl('/api/posts/upload'), { method: 'POST', body: form });
 	const data = await resp.json();
 	if (!resp.ok) throw new Error(data.error || 'upload_failed');
@@ -182,12 +179,13 @@ window.addEventListener('keydown', (e) => {
 function showUploadModal(file) {
 	pendingUploadFile = file;
 	const slug = safeBasename(file.name);
-	const options = [
-		`<option value="">未分类</option>`,
-		...categories
-			.filter((c) => c.name && c.name !== '未分类')
-			.map((c) => `<option value="${c.name}">${c.name} (${c.count})</option>`),
-	].join('');
+	const chips = categories
+		.filter((c) => c.name && c.name !== '未分类')
+		.map(
+			(c) =>
+				`<button class="btn" type="button" data-cat="${c.name}">${c.name} (${c.count})</button>`
+		)
+		.join('');
 	openModal({
 		title: '确认上传',
 		bodyHtml: `
@@ -202,9 +200,8 @@ function showUploadModal(file) {
 			</div>
 			<div class="row">
 				<div class="label">分类</div>
-				<select class="select" id="upload-category">
-					${options}
-				</select>
+				<input class="input" id="upload-categories" placeholder="多个分类用逗号分隔，例如：技术, 随笔" />
+				<div class="inline" id="cat-chips">${chips || '<div class="muted">暂无已有分类</div>'}</div>
 				<div class="hint">留空则保持文章原分类；若文章无分类则为未分类。</div>
 			</div>
 			<div class="row">
@@ -221,6 +218,20 @@ function showUploadModal(file) {
 		`,
 	});
 	$('upload-cancel')?.addEventListener('click', () => closeModal());
+	$('cat-chips')?.addEventListener('click', (ev) => {
+		const btn = ev.target?.closest?.('button[data-cat]');
+		const cat = btn?.getAttribute?.('data-cat') ?? '';
+		if (!cat) return;
+		const input = $('upload-categories');
+		if (!input) return;
+		const parts = input.value
+			.split(/[,，]/g)
+			.map((c) => c.trim())
+			.filter(Boolean);
+		const has = parts.includes(cat);
+		const next = has ? parts.filter((c) => c !== cat) : [...parts, cat];
+		input.value = Array.from(new Set(next)).join(', ');
+	});
 	$('upload-confirm')?.addEventListener('click', async () => {
 		if (!pendingUploadFile) return;
 		try {

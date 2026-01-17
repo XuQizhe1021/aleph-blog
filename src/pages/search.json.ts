@@ -1,4 +1,5 @@
 import { getCollection } from 'astro:content';
+import { getCategories } from '../utils/blog';
 
 function stripMarkdown(md: string) {
 	return md
@@ -22,8 +23,7 @@ export async function GET() {
 				slug: p.slug,
 				title: p.data.title,
 				description: p.data.description ?? '',
-				category: p.data.category ?? '',
-				tags: p.data.tags ?? [],
+				categories: getCategories(p),
 				pubDate: p.data.pubDate.toISOString(),
 				text: text.slice(0, 6000),
 			};
@@ -36,4 +36,3 @@ export async function GET() {
 		},
 	});
 }
-

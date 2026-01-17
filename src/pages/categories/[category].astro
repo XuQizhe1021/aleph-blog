@@ -1,14 +1,15 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import PostCard from '../../components/PostCard.astro';
-import { getPublicPosts, getCategory } from '../../utils/blog';
+import { getCategories, getPublicPosts } from '../../utils/blog';
 
 export async function getStaticPaths() {
 	const posts = await getPublicPosts();
 	const categories = new Map<string, string>();
 	for (const post of posts) {
-		const c = getCategory(post);
-		categories.set(c, c);
+		for (const c of getCategories(post)) {
+			categories.set(c, c);
+		}
 	}
 	return [...categories.values()].map((category) => ({
 		params: { category },
@@ -16,7 +17,7 @@ export async function getStaticPaths() {
 }
 
 const { category } = Astro.params;
-const posts = (await getPublicPosts()).filter((p) => getCategory(p) === category);
+const posts = (await getPublicPosts()).filter((p) => getCategories(p).includes(category));
 ---
 
 <Layout title={`分类：${category}`}>

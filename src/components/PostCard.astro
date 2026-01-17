@@ -1,11 +1,12 @@
 ---
 import type { BlogEntry } from '../utils/blog';
-import { getCategory } from '../utils/blog';
+import { getCategories, getPrimaryCategory } from '../utils/blog';
 import { withBase } from '../utils/paths';
 
 type Props = { post: BlogEntry };
 const { post } = Astro.props;
-const category = getCategory(post);
+const categories = getCategories(post);
+const primaryCategory = getPrimaryCategory(post);
 ---
 
 <article class="post-card panel">
@@ -16,14 +17,14 @@ const category = getCategory(post);
 				{post.data.pubDate.toLocaleDateString('zh-CN')}
 			</time>
 			<span class="dot" aria-hidden="true">·</span>
-			<a class="cat" href={withBase(`/categories/${encodeURIComponent(category)}`)}>{category}</a>
+			<a class="cat" href={withBase(`/categories/${encodeURIComponent(primaryCategory)}`)}>{primaryCategory}</a>
 		</div>
 	</div>
 	{post.data.description && <p class="desc muted">{post.data.description}</p>}
-	{post.data.tags?.length ? (
+	{categories.length ? (
 		<div class="tags">
-			{post.data.tags.map((t) => (
-				<span class="badge">{t}</span>
+			{categories.map((c) => (
+				<a class="badge" href={withBase(`/categories/${encodeURIComponent(c)}`)}>{c}</a>
 			))}
 		</div>
 	) : null}

@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import Toc from '../../components/Toc.astro';
 import { getCollection } from 'astro:content';
-import { getCategory } from '../../utils/blog';
+import { getCategories, getPrimaryCategory } from '../../utils/blog';
 import { withBase } from '../../utils/paths';
 
 export async function getStaticPaths() {
@@ -15,7 +15,8 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content, headings } = await post.render();
-const category = getCategory(post);
+const categories = getCategories(post);
+const primaryCategory = getPrimaryCategory(post);
 ---
 
 <Layout title={post.data.title} description={post.data.description}>
@@ -36,13 +37,13 @@ const category = getCategory(post);
 				) : null}
 				<span>
 					<span class="dot" aria-hidden="true">·</span>
-					<a class="meta-link" href={withBase(`/categories/${encodeURIComponent(category)}`)}>{category}</a>
+					<a class="meta-link" href={withBase(`/categories/${encodeURIComponent(primaryCategory)}`)}>{primaryCategory}</a>
 				</span>
 			</div>
-			{post.data.tags?.length ? (
+			{categories.length ? (
 				<div class="article-tags">
-					{post.data.tags.map((t) => (
-						<span class="badge">{t}</span>
+					{categories.map((c) => (
+						<a class="badge" href={withBase(`/categories/${encodeURIComponent(c)}`)}>{c}</a>
 					))}
 				</div>
 			) : null}

@@ -71,19 +71,20 @@ function normalizeFrontmatter(data) {
 	if (typeof out.title !== 'string' || !out.title.trim()) out.title = '未命名';
 	if (!out.pubDate) out.pubDate = new Date().toISOString();
 
-	if (typeof out.category === 'string') out.category = out.category.trim();
-	if (!out.category) delete out.category;
+	const rawCategories = [];
+	if (Array.isArray(out.categories)) rawCategories.push(...out.categories);
+	if (typeof out.categories === 'string') rawCategories.push(...out.categories.split(/[,，]/g));
+	if (typeof out.category === 'string') rawCategories.push(out.category);
+	if (Array.isArray(out.tags)) rawCategories.push(...out.tags);
+	if (typeof out.tags === 'string') rawCategories.push(...out.tags.split(/[,，]/g));
 
-	if (Array.isArray(out.tags)) {
-		out.tags = out.tags.map((t) => String(t).trim()).filter(Boolean);
-	} else if (typeof out.tags === 'string') {
-		out.tags = out.tags
-			.split(',')
-			.map((t) => t.trim())
-			.filter(Boolean);
-	} else {
-		out.tags = [];
-	}
+	const categories = Array.from(
+		new Set(rawCategories.map((c) => String(c).trim()).filter(Boolean))
+	);
+	if (categories.length) out.categories = categories;
+	else delete out.categories;
+	delete out.category;
+	delete out.tags;
 
 	out.draft = Boolean(out.draft);
 
@@ -132,8 +133,7 @@ app.get('/api/posts', async (_req, res) => {
 					file,
 					title: data.title,
 					description: typeof data.description === 'string' ? data.description : '',
-					category: typeof data.category === 'string' ? data.category : '',
-					tags: Array.isArray(data.tags) ? data.tags : [],
+					categories: Array.isArray(data.categories) ? data.categories : [],
 					pubDate: data.pubDate,
 					updatedDate: data.updatedDate ?? '',
 					draft: Boolean(data.draft),
@@ -182,9 +182,20 @@ app.post('/api/posts/upload', upload.single('file'), async (req, res) => {
 		if (data.title === '未命名') data.title = slug;
 		const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
 		if (title) data.title = title;
-		const category =
-			typeof req.body?.category === 'string' ? req.body.category.trim() : '';
-		if (category) data.category = category;
+		const categoriesRaw =
+			typeof req.body?.categories === 'string' ? req.body.categories.trim() : '';
+		if (categoriesRaw) {
+			const categories = Array.from(
+				new Set(
+					categoriesRaw
+						.split(/[,，]/g)
+						.map((c) => c.trim())
+						.filter(Boolean)
+				)
+			);
+			if (categories.length) data.categories = categories;
+			else delete data.categories;
+		}
 
 		const existingPath = await readPostFile(slug);
 		if (existingPath) {
@@ -215,8 +226,11 @@ app.get('/api/categories', async (_req, res) => {
 			const raw = await readTextFile(full);
 			const parsed = matter(raw);
 			const data = normalizeFrontmatter(parsed.data ?? {});
-			const c = typeof data.category === 'string' && data.category ? data.category : '未分类';
-			counts.set(c, (counts.get(c) ?? 0) + 1);
+			const cats =
+				Array.isArray(data.categories) && data.categories.length ? data.categories : ['未分类'];
+			for (const c of cats) {
+				counts.set(c, (counts.get(c) ?? 0) + 1);
+			}
 		}
 		const categories = Array.from(counts.entries())
 			.map(([name, count]) => ({ name, count }))
@@ -240,10 +254,16 @@ app.post('/api/categories/rename', async (req, res) => {
 			const raw = await readTextFile(full);
 			const parsed = matter(raw);
 			const data = normalizeFrontmatter(parsed.data ?? {});
-			const current = typeof data.category === 'string' && data.category ? data.category : '未分类';
-			if (current !== from) continue;
-			if (to && to !== '未分类') data.category = to;
-			else delete data.category;
+			const cats = Array.isArray(data.categories) ? data.categories : [];
+			if (!cats.includes(from)) continue;
+			const next = cats
+				.map((c) => (c === from ? to : c))
+				.map((c) => String(c).trim())
+				.filter(Boolean)
+				.filter((c) => c !== '未分类');
+			const outCats = Array.from(new Set(next));
+			if (outCats.length) data.categories = outCats;
+			else delete data.categories;
 			data.updatedDate = new Date().toISOString();
 			const out = matter.stringify(parsed.content ?? '', data);
 			await fs.writeFile(full, out, 'utf-8');
@@ -266,9 +286,16 @@ app.delete('/api/categories/:name', async (req, res) => {
 			const raw = await readTextFile(full);
 			const parsed = matter(raw);
 			const data = normalizeFrontmatter(parsed.data ?? {});
-			const current = typeof data.category === 'string' && data.category ? data.category : '未分类';
-			if (current !== name) continue;
-			delete data.category;
+			const cats = Array.isArray(data.categories) ? data.categories : [];
+			if (!cats.includes(name)) continue;
+			const next = cats
+				.map((c) => String(c).trim())
+				.filter(Boolean)
+				.filter((c) => c !== name)
+				.filter((c) => c !== '未分类');
+			const outCats = Array.from(new Set(next));
+			if (outCats.length) data.categories = outCats;
+			else delete data.categories;
 			data.updatedDate = new Date().toISOString();
 			const out = matter.stringify(parsed.content ?? '', data);
 			await fs.writeFile(full, out, 'utf-8');

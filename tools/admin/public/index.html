@@ -43,6 +43,21 @@
 							</div>
 						</div>
 						<div class="muted viewer-sub" id="v-sub"></div>
+						<div class="viewer-meta">
+							<div class="row">
+								<div class="label">分类</div>
+								<div class="viewer-edit">
+									<input
+										class="input"
+										id="edit-categories"
+										placeholder="多个分类用逗号分隔，例如：技术, 随笔"
+										disabled
+									/>
+									<button class="btn" id="save-categories" type="button" disabled>保存分类</button>
+								</div>
+								<div class="hint">留空=设为未分类（删除文章 frontmatter 的 categories 字段）。</div>
+							</div>
+						</div>
 						<div class="split">
 							<div class="raw">
 								<div class="split-title muted">原始内容</div>

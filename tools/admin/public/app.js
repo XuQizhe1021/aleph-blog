@@ -14,6 +14,8 @@ const $vTitle = $('v-title');
 const $vSub = $('v-sub');
 const $raw = $('raw');
 const $preview = $('preview');
+const $editCategories = $('edit-categories');
+const $saveCategories = $('save-categories');
 const $modal = $('modal');
 const $modalBackdrop = $('modal-backdrop');
 const $modalClose = $('modal-close');
@@ -125,6 +127,11 @@ async function loadPost(slug) {
 	}
 
 	if ($raw) $raw.textContent = data.raw || '';
+	if ($editCategories) {
+		$editCategories.disabled = false;
+		$editCategories.value = categories.join(', ');
+	}
+	$saveCategories && ($saveCategories.disabled = false);
 
 	$delete && ($delete.disabled = false);
 	$openSite && ($openSite.disabled = false);
@@ -136,6 +143,16 @@ async function loadPost(slug) {
 	});
 	const previewData = await previewResp.json();
 	if ($preview) $preview.innerHTML = previewData.html || '';
+}
+
+async function saveCategories(slug, categoriesRaw) {
+	const resp = await fetch(baseUrl(`/api/posts/${encodeURIComponent(slug)}/categories`), {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ categories: categoriesRaw }),
+	});
+	const data = await resp.json();
+	if (!resp.ok) throw new Error(data.error || 'save_failed');
 }
 
 async function uploadMd(file) {
@@ -174,6 +191,22 @@ $list?.addEventListener('click', (e) => {
 $filter?.addEventListener('input', () => renderList());
 
 $refresh?.addEventListener('click', () => loadPosts());
+
+$editCategories?.addEventListener('keydown', (e) => {
+	if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $saveCategories?.click();
+});
+
+$saveCategories?.addEventListener('click', async () => {
+	if (!activeSlug) return;
+	try {
+		const value = $editCategories?.value ?? '';
+		await saveCategories(activeSlug, value);
+		await loadPosts();
+		await loadPost(activeSlug);
+	} catch (e) {
+		alert(String(e?.message || e));
+	}
+});
 
 $modalBackdrop?.addEventListener('click', () => closeModal());
 $modalClose?.addEventListener('click', () => closeModal());
@@ -331,6 +364,9 @@ $delete?.addEventListener('click', async () => {
 	$preview && ($preview.innerHTML = '');
 	$delete && ($delete.disabled = true);
 	$openSite && ($openSite.disabled = true);
+	$editCategories && ($editCategories.value = '');
+	$editCategories && ($editCategories.disabled = true);
+	$saveCategories && ($saveCategories.disabled = true);
 	await loadPosts();
 });
 

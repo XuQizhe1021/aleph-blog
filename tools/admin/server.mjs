@@ -345,6 +345,43 @@ app.post('/api/publish', async (req, res) => {
 	}
 });
 
+app.post('/api/posts/:slug/categories', async (req, res) => {
+	try {
+		const slug = req.params.slug;
+		const filePath = await readPostFile(slug);
+		if (!filePath) return res.status(404).json({ error: 'not_found' });
+
+		const categoriesRaw = req.body?.categories;
+		let next = [];
+		if (Array.isArray(categoriesRaw)) next = categoriesRaw;
+		else if (typeof categoriesRaw === 'string') next = categoriesRaw.split(/[,，]/g);
+		else if (categoriesRaw == null) next = [];
+		else return res.status(400).json({ error: 'invalid_categories' });
+
+		const categories = Array.from(
+			new Set(
+				next
+					.map((c) => String(c).trim())
+					.filter(Boolean)
+					.filter((c) => c !== '未分类')
+			)
+		);
+
+		const raw = await readTextFile(filePath);
+		const parsed = matter(raw);
+		const data = normalizeFrontmatter(parsed.data ?? {});
+		if (categories.length) data.categories = categories;
+		else delete data.categories;
+		data.updatedDate = new Date().toISOString();
+
+		const out = matter.stringify(parsed.content ?? '', data);
+		await fs.writeFile(filePath, out, 'utf-8');
+		res.json({ ok: true, categories });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
+
 app.delete('/api/posts/:slug', async (req, res) => {
 	try {
 		const slug = req.params.slug;

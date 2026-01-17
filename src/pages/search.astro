@@ -1,0 +1,171 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="搜索">
+	<section class="panel search">
+		<div class="title">搜索</div>
+		<div class="row">
+			<input id="q" class="input" placeholder="输入标题 / 内容关键词…" />
+			<button id="clear" class="btn" type="button">清空</button>
+		</div>
+		<div class="muted hint">支持标题、正文、分类、标签联合匹配。</div>
+	</section>
+
+	<section id="results" class="results"></section>
+
+	<script>
+		import Fuse from 'fuse.js';
+
+		type SearchItem = {
+			slug: string;
+			title: string;
+			description: string;
+			category: string;
+			tags: string[];
+			pubDate: string;
+			text: string;
+		};
+
+		const $q = document.getElementById('q') as HTMLInputElement | null;
+		const $clear = document.getElementById('clear') as HTMLButtonElement | null;
+		const $results = document.getElementById('results') as HTMLElement | null;
+
+		const resp = await fetch(`${import.meta.env.BASE_URL}search.json`);
+		const data = (await resp.json()) as { items?: SearchItem[] };
+		const items = data.items ?? [];
+
+		const fuse = new Fuse<SearchItem>(items, {
+			includeScore: true,
+			threshold: 0.35,
+			ignoreLocation: true,
+			keys: [
+				{ name: 'title', weight: 0.45 },
+				{ name: 'description', weight: 0.1 },
+				{ name: 'category', weight: 0.1 },
+				{ name: 'tags', weight: 0.1 },
+				{ name: 'text', weight: 0.25 },
+			],
+		});
+
+		const render = (rows: Array<{ item: SearchItem } | SearchItem>, query: string) => {
+			if (!$results) return;
+			if (!query) {
+				$results.innerHTML = `<div class="muted">输入关键词开始搜索</div>`;
+				return;
+			}
+			if (!rows.length) {
+				$results.innerHTML = `<div class="muted">未找到匹配结果</div>`;
+				return;
+			}
+			$results.innerHTML = rows
+				.map((r) => {
+					const item = 'item' in r ? r.item : r;
+					const url = `${import.meta.env.BASE_URL}posts/${item.slug}`;
+					const metaParts = [];
+					if (item.pubDate) metaParts.push(new Date(item.pubDate).toLocaleDateString('zh-CN'));
+					if (item.category) metaParts.push(item.category);
+					const meta = metaParts.join(' · ');
+					return `
+						<article class="panel card">
+							<a class="card-title" href="${url}">${item.title}</a>
+							<div class="muted card-meta">${meta}</div>
+							${item.description ? `<p class="muted card-desc">${item.description}</p>` : ''}
+						</article>
+					`;
+				})
+				.join('');
+		};
+
+		const doSearch = () => {
+			const query = ($q?.value ?? '').trim();
+			if (!query) return render([], '');
+			const res = fuse.search(query).slice(0, 30);
+			render(res, query);
+		};
+
+		$q?.addEventListener('input', () => doSearch());
+		$clear?.addEventListener('click', () => {
+			if ($q) $q.value = '';
+			doSearch();
+			$q?.focus();
+		});
+
+		const url = new URL(window.location.href);
+		const initial = url.searchParams.get('q');
+		if (initial && $q) {
+			$q.value = initial;
+		}
+		doSearch();
+	</script>
+</Layout>
+
+<style>
+	.search {
+		padding: 18px;
+		display: grid;
+		gap: 10px;
+	}
+
+	.title {
+		font-size: 24px;
+		font-weight: 850;
+	}
+
+	.row {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 10px;
+		align-items: center;
+	}
+
+	.input {
+		height: 40px;
+		padding: 0 14px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 10%);
+		color: var(--text);
+		outline: none;
+	}
+
+	.input:focus {
+		border-color: color-mix(in oklab, var(--accent), var(--border) 20%);
+		box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 86%);
+	}
+
+	.hint {
+		font-size: 13px;
+	}
+
+	.results {
+		margin-top: 14px;
+		display: grid;
+		gap: 12px;
+	}
+
+	.card {
+		padding: 16px;
+		display: grid;
+		gap: 8px;
+	}
+
+	.card-title {
+		font-size: 18px;
+		font-weight: 750;
+		text-decoration: none;
+	}
+
+	.card-title:hover {
+		text-decoration: underline;
+		text-decoration-color: color-mix(in oklab, var(--accent), transparent 55%);
+	}
+
+	.card-meta {
+		font-size: 13px;
+	}
+
+	.card-desc {
+		margin: 0;
+	}
+</style>

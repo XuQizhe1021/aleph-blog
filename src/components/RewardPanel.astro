@@ -1,0 +1,84 @@
+---
+import { siteConfig } from '../site.config';
+---
+
+<aside class="reward" id="reward-panel" aria-label="打赏面板">
+	<button class="btn reward-toggle" type="button" id="reward-toggle">打赏</button>
+	<div class="reward-card panel" id="reward-card" hidden>
+		<div class="reward-title">感谢支持</div>
+		<img
+			id="reward-image"
+			class="reward-image"
+			src={siteConfig.rewardImagePath}
+			alt="打赏二维码"
+			loading="lazy"
+		/>
+	</div>
+	<script is:inline>
+		(() => {
+			const toggle = document.getElementById('reward-toggle');
+			const card = document.getElementById('reward-card');
+			const img = document.getElementById('reward-image');
+			const panel = document.getElementById('reward-panel');
+			const key = 'reward_open';
+
+			if (img) {
+				img.addEventListener('error', () => {
+					if (panel) panel.style.display = 'none';
+				});
+			}
+
+			const setOpen = (open) => {
+				if (!card) return;
+				card.hidden = !open;
+				localStorage.setItem(key, open ? '1' : '0');
+			};
+
+			const open = localStorage.getItem(key) === '1';
+			setOpen(open);
+			toggle?.addEventListener('click', () => setOpen(card?.hidden ?? true));
+		})();
+	</script>
+</aside>
+
+<style>
+	.reward {
+		position: fixed;
+		right: 18px;
+		bottom: 18px;
+		display: grid;
+		gap: 10px;
+		z-index: 30;
+	}
+
+	.reward-toggle {
+		justify-content: center;
+	}
+
+	.reward-card {
+		width: 220px;
+		padding: 12px;
+	}
+
+	.reward-title {
+		font-size: 13px;
+		color: var(--muted);
+		margin-bottom: 10px;
+	}
+
+	.reward-image {
+		width: 100%;
+		height: auto;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 10%);
+	}
+
+	@media (max-width: 720px) {
+		.reward {
+			right: 12px;
+			bottom: 12px;
+		}
+	}
+</style>
+

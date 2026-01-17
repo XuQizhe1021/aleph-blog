@@ -1,0 +1,37 @@
+---
+import { siteConfig } from '../site.config';
+---
+
+<footer class="site-footer">
+	<div class="inner muted">
+		<span>© {new Date().getFullYear()} {siteConfig.author}</span>
+		<span class="sep" aria-hidden="true">·</span>
+		<a href="/rss.xml">RSS</a>
+	</div>
+</footer>
+
+<style>
+	.site-footer {
+		border-top: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 30%);
+		backdrop-filter: blur(16px);
+	}
+
+	.inner {
+		width: min(1140px, calc(100% - 32px));
+		margin: 0 auto;
+		height: 58px;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.sep {
+		opacity: 0.6;
+	}
+
+	a {
+		color: inherit;
+	}
+</style>
+

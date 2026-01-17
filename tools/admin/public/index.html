@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>博客管理</title>
+		<link rel="stylesheet" href="/vendor/katex/katex.min.css" />
+		<link rel="stylesheet" href="/admin/styles.css" />
+	</head>
+	<body>
+		<div class="shell">
+			<header class="top">
+				<div class="brand">博客管理</div>
+				<div class="top-actions">
+					<label class="btn">
+						上传文章(md)
+						<input id="upload-md" type="file" accept=".md,.mdx" hidden />
+					</label>
+					<label class="btn">
+						上传打赏图
+						<input id="upload-reward" type="file" accept="image/*" hidden />
+					</label>
+					<button class="btn" id="refresh" type="button">刷新</button>
+				</div>
+			</header>
+			<div class="main">
+				<aside class="left">
+					<div class="panel left-panel">
+						<input id="filter" class="input" placeholder="搜索标题 / slug / 分类 / 标签…" />
+						<div class="muted meta" id="count"></div>
+					</div>
+					<div class="list" id="list"></div>
+				</aside>
+				<section class="right">
+					<div class="panel viewer">
+						<div class="viewer-head">
+							<div class="viewer-title" id="v-title">请选择一篇文章</div>
+							<div class="viewer-actions">
+								<button class="btn" id="open-site" type="button" disabled>在站点中打开</button>
+								<button class="btn danger" id="delete" type="button" disabled>删除</button>
+							</div>
+						</div>
+						<div class="muted viewer-sub" id="v-sub"></div>
+						<div class="split">
+							<div class="raw">
+								<div class="split-title muted">原始内容</div>
+								<pre class="code" id="raw"></pre>
+							</div>
+							<div class="preview">
+								<div class="split-title muted">预览</div>
+								<div class="prose" id="preview"></div>
+							</div>
+						</div>
+					</div>
+				</section>
+			</div>
+		</div>
+		<script type="module" src="/admin/app.js"></script>
+	</body>
+</html>
+

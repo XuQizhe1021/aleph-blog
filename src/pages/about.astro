@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { siteConfig } from '../site.config';
+---
+
+<Layout title="关于">
+	<section class="panel about">
+		<h1>关于</h1>
+		<p class="muted">
+			这里是 <strong>{siteConfig.author}</strong> 的个人博客。你可以在这里阅读文章、搜索、按分类浏览。
+		</p>
+		<p class="muted">
+			在本地运行管理后台可进行文章上传、删除与同名覆盖更新。
+		</p>
+	</section>
+</Layout>
+
+<style>
+	.about {
+		padding: 18px;
+	}
+
+	h1 {
+		margin: 0 0 10px;
+	}
+</style>
+

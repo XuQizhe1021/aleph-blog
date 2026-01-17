@@ -1,0 +1,81 @@
+---
+import type { BlogEntry } from '../utils/blog';
+import { getCategory } from '../utils/blog';
+
+type Props = { post: BlogEntry };
+const { post } = Astro.props;
+const category = getCategory(post);
+---
+
+<article class="post-card panel">
+	<div class="meta">
+		<a class="title" href={`/posts/${post.slug}`}>{post.data.title}</a>
+		<div class="sub muted">
+			<time datetime={post.data.pubDate.toISOString()}>
+				{post.data.pubDate.toLocaleDateString('zh-CN')}
+			</time>
+			<span class="dot" aria-hidden="true">·</span>
+			<a class="cat" href={`/categories/${encodeURIComponent(category)}`}>{category}</a>
+		</div>
+	</div>
+	{post.data.description && <p class="desc muted">{post.data.description}</p>}
+	{post.data.tags?.length ? (
+		<div class="tags">
+			{post.data.tags.map((t) => (
+				<span class="badge">{t}</span>
+			))}
+		</div>
+	) : null}
+</article>
+
+<style>
+	.post-card {
+		padding: 16px;
+		display: grid;
+		gap: 10px;
+	}
+
+	.title {
+		display: inline-block;
+		font-size: 18px;
+		font-weight: 700;
+		letter-spacing: 0.2px;
+		text-decoration: none;
+	}
+
+	.title:hover {
+		text-decoration: underline;
+		text-decoration-color: color-mix(in oklab, var(--accent), transparent 55%);
+	}
+
+	.sub {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+	}
+
+	.dot {
+		opacity: 0.6;
+	}
+
+	.cat {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.cat:hover {
+		text-decoration: underline;
+	}
+
+	.desc {
+		margin: 0;
+	}
+
+	.tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+</style>
+

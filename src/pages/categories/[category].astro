@@ -1,0 +1,52 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getPublicPosts, getCategory } from '../../utils/blog';
+
+export async function getStaticPaths() {
+	const posts = await getPublicPosts();
+	const categories = new Map<string, string>();
+	for (const post of posts) {
+		const c = getCategory(post);
+		categories.set(c, c);
+	}
+	return [...categories.values()].map((category) => ({
+		params: { category },
+	}));
+}
+
+const { category } = Astro.params;
+const posts = (await getPublicPosts()).filter((p) => getCategory(p) === category);
+---
+
+<Layout title={`分类：${category}`}>
+	<section class="head panel">
+		<div class="title">{category}</div>
+		<div class="muted">共 {posts.length} 篇</div>
+	</section>
+	<section class="list">
+		{posts.length ? posts.map((post) => <PostCard post={post} />) : <div class="muted">暂无文章</div>}
+	</section>
+</Layout>
+
+<style>
+	.head {
+		padding: 18px;
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 10px;
+	}
+
+	.title {
+		font-size: 24px;
+		font-weight: 850;
+	}
+
+	.list {
+		margin-top: 14px;
+		display: grid;
+		gap: 12px;
+	}
+</style>
+

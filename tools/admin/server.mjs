@@ -182,6 +182,9 @@ app.post('/api/posts/upload', upload.single('file'), async (req, res) => {
 		if (data.title === '未命名') data.title = slug;
 		const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
 		if (title) data.title = title;
+		const description =
+			typeof req.body?.description === 'string' ? req.body.description.trim() : '';
+		if (description) data.description = description;
 		const categoriesRaw =
 			typeof req.body?.categories === 'string' ? req.body.categories.trim() : '';
 		if (categoriesRaw) {
@@ -352,7 +355,20 @@ app.post('/api/reward-image', upload.single('file'), async (req, res) => {
 		const file = req.file;
 		if (!file) return res.status(400).json({ error: 'missing_file' });
 		const originalname = decodePossiblyMojibakeName(file.originalname);
-		const ext = (path.extname(originalname) || '.png').toLowerCase();
+		let ext = (path.extname(originalname) || '').toLowerCase();
+		if (!ext) {
+			const mime = String(file.mimetype || '').toLowerCase();
+			if (mime === 'image/png') ext = '.png';
+			else if (mime === 'image/jpeg') ext = '.jpg';
+			else if (mime === 'image/webp') ext = '.webp';
+			else if (mime === 'image/gif') ext = '.gif';
+			else if (mime === 'image/svg+xml') ext = '.svg';
+			else ext = '.png';
+		}
+		if (!/^\.[a-z0-9]+$/i.test(ext)) ext = '.png';
+
+		const existing = (await fs.readdir(publicDir)).filter((f) => /^reward\./i.test(f));
+		await Promise.all(existing.map((f) => fs.unlink(path.join(publicDir, f)).catch(() => null)));
 		const target = path.join(publicDir, `reward${ext}`);
 		await fs.writeFile(target, file.buffer);
 		res.json({ ok: true, path: `/reward${ext}` });
@@ -363,7 +379,9 @@ app.post('/api/reward-image', upload.single('file'), async (req, res) => {
 
 app.get('/api/reward-image', async (_req, res) => {
 	try {
-		const files = (await fs.readdir(publicDir)).filter((f) => /^reward\./i.test(f));
+		const files = (await fs.readdir(publicDir))
+			.filter((f) => /^reward\./i.test(f))
+			.sort((a, b) => a.localeCompare(b));
 		const file = files[0] ?? '';
 		res.json({ path: file ? `/${file}` : '' });
 	} catch (e) {

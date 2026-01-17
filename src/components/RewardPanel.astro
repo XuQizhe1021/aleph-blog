@@ -1,6 +1,17 @@
 ---
 import { siteConfig } from '../site.config';
 import { withBase } from '../utils/paths';
+import fssync from 'node:fs';
+import path from 'node:path';
+
+const projectRoot = process.cwd();
+const publicDir = path.join(projectRoot, 'public');
+let rewardImagePath: string = siteConfig.rewardImagePath;
+try {
+	const files = fssync.readdirSync(publicDir).filter((f) => /^reward\./i.test(f));
+	files.sort((a, b) => a.localeCompare(b));
+	if (files[0]) rewardImagePath = `/${files[0]}`;
+} catch {}
 ---
 
 <aside class="reward" id="reward-panel" aria-label="打赏面板">
@@ -10,7 +21,7 @@ import { withBase } from '../utils/paths';
 		<img
 			id="reward-image"
 			class="reward-image"
-			src={withBase(siteConfig.rewardImagePath)}
+			src={withBase(rewardImagePath)}
 			alt="打赏二维码"
 			loading="lazy"
 		/>

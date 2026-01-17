@@ -25,6 +25,7 @@ let posts = [];
 let activeSlug = '';
 let categories = [];
 let pendingUploadFile = null;
+let pendingRewardFile = null;
 
 const baseUrl = (path) => `${path}`;
 const formatDate = (s) => (s ? new Date(s).toLocaleDateString('zh-CN') : '');
@@ -42,6 +43,7 @@ function closeModal() {
 	if ($modalBody) $modalBody.innerHTML = '';
 	if ($modalActions) $modalActions.innerHTML = '';
 	pendingUploadFile = null;
+	pendingRewardFile = null;
 }
 
 function safeBasename(fileName) {
@@ -141,8 +143,10 @@ async function uploadMd(file) {
 	form.append('file', file);
 	const title = $('upload-title')?.value?.trim?.() ?? '';
 	const categories = $('upload-categories')?.value?.trim?.() ?? '';
+	const description = $('upload-description')?.value?.trim?.() ?? '';
 	if (title) form.append('title', title);
 	if (categories) form.append('categories', categories);
+	if (description) form.append('description', description);
 	const resp = await fetch(baseUrl('/api/posts/upload'), { method: 'POST', body: form });
 	const data = await resp.json();
 	if (!resp.ok) throw new Error(data.error || 'upload_failed');
@@ -157,6 +161,7 @@ async function uploadReward(file) {
 	const resp = await fetch(baseUrl('/api/reward-image'), { method: 'POST', body: form });
 	const data = await resp.json();
 	if (!resp.ok) throw new Error(data.error || 'upload_failed');
+	return data;
 }
 
 $list?.addEventListener('click', (e) => {
@@ -197,6 +202,11 @@ function showUploadModal(file) {
 			<div class="row">
 				<div class="label">标题</div>
 				<input class="input" id="upload-title" placeholder="留空则使用文章 frontmatter 或文件名" />
+			</div>
+			<div class="row">
+				<div class="label">描述</div>
+				<textarea class="textarea" id="upload-description" placeholder="可留空"></textarea>
+				<div class="hint">留空则保持文章原描述。</div>
 			</div>
 			<div class="row">
 				<div class="label">分类</div>
@@ -263,11 +273,47 @@ $uploadReward?.addEventListener('change', async (e) => {
 	const file = e.target.files?.[0];
 	if (!file) return;
 	try {
-		await uploadReward(file);
+		showRewardUploadModal(file);
 	} finally {
 		e.target.value = '';
 	}
 });
+
+function showRewardUploadModal(file) {
+	pendingRewardFile = file;
+	openModal({
+		title: '上传打赏图',
+		bodyHtml: `
+			<div class="row">
+				<div class="label">文件</div>
+				<div class="muted">${file.name}</div>
+				<div class="hint">上传后会覆盖原打赏图（仓库里只保留一个 reward.* 文件）。</div>
+			</div>
+			<div class="row">
+				<label class="inline muted">
+					<input type="checkbox" id="reward-autopublish" checked />
+					上传后自动发布到 GitHub（会执行 git commit + git push）
+				</label>
+			</div>
+		`,
+		actionsHtml: `
+			<button class="btn" id="reward-cancel" type="button">取消</button>
+			<button class="btn" id="reward-confirm" type="button">确认上传</button>
+		`,
+	});
+	$('reward-cancel')?.addEventListener('click', () => closeModal());
+	$('reward-confirm')?.addEventListener('click', async () => {
+		if (!pendingRewardFile) return;
+		try {
+			const autoPublish = $('reward-autopublish')?.checked ?? false;
+			await uploadReward(pendingRewardFile);
+			closeModal();
+			if (autoPublish) await publishSite();
+		} catch (e2) {
+			alert(String(e2?.message || e2));
+		}
+	});
+}
 
 $delete?.addEventListener('click', async () => {
 	if (!activeSlug) return;

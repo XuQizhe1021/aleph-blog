@@ -354,6 +354,11 @@ a {
 	align-items: start;
 }
 
+.raw,
+.preview {
+	min-width: 0;
+}
+
 .split-title {
 	font-size: 12px;
 	margin-bottom: 6px;
@@ -381,6 +386,7 @@ a {
 	background: color-mix(in oklab, var(--panel-strong), transparent 25%);
 	max-height: calc(100vh - 220px);
 	overflow: auto;
+	min-width: 0;
 	line-height: 1.8;
 }
 

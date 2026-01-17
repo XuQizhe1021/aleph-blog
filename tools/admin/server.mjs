@@ -118,6 +118,13 @@ app.use(
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+app.use((req, res, next) => {
+	if (req.path.startsWith('/api/') || req.path === '/api') {
+		if (!isLocalRequest(req)) return res.status(403).json({ error: 'forbidden' });
+	}
+	next();
+});
+
 app.get('/api/posts', async (_req, res) => {
 	try {
 		const files = (await fs.readdir(postsDir)).filter((f) => /\.(md|mdx)$/i.test(f));
@@ -400,6 +407,6 @@ app.post('/api/preview', async (req, res) => {
 });
 
 const port = Number(process.env.ADMIN_PORT ?? 4322);
-app.listen(port, () => {
+app.listen(port, '127.0.0.1', () => {
 	console.log(`Admin running at http://localhost:${port}/admin`);
 });

@@ -5,18 +5,47 @@ import { getPublicPosts, getAllCategories } from '../utils/blog';
 import { withBase } from '../utils/paths';
 
 const posts = await getPublicPosts();
-const categories = getAllCategories(posts).slice(0, 8);
+const allCategories = getAllCategories(posts);
+const categories = allCategories.slice(0, 8);
 const latest = posts.slice(0, 8);
 
+const totalPosts = posts.length;
+const totalCategories = allCategories.length;
+const latestUpdateTs = posts.reduce((max, post) => {
+	const t = (post.data.updatedDate ?? post.data.pubDate).getTime();
+	return Math.max(max, t);
+}, 0);
+const latestUpdateText = latestUpdateTs
+	? new Date(latestUpdateTs).toLocaleDateString('zh-CN')
+	: '—';
 ---
 
 <Layout title="首页">
 	<section class="hero panel">
-		<div class="hero-title">欢迎来到我的博客</div>
-		<p class="hero-sub muted">支持 Markdown、LaTeX、分类、全文搜索与舒适阅读体验。</p>
-		<div class="hero-actions">
-			<a class="btn" href={withBase('/posts')}>浏览文章</a>
-			<a class="btn" href={withBase('/search')}>搜索</a>
+		<div class="hero-head">
+			<div class="hero-title">站点概览</div>
+			<div class="hero-actions">
+				<a class="btn" href={withBase('/posts')}>浏览文章</a>
+				<a class="btn" href={withBase('/search')}>搜索</a>
+			</div>
+		</div>
+		<div class="stats">
+			<div class="stat">
+				<div class="stat-k muted">文章</div>
+				<div class="stat-v">{totalPosts}</div>
+			</div>
+			<div class="stat">
+				<div class="stat-k muted">分类</div>
+				<div class="stat-v">{totalCategories}</div>
+			</div>
+			<div class="stat">
+				<div class="stat-k muted">最近更新</div>
+				<div class="stat-v">{latestUpdateText}</div>
+			</div>
+			<div class="stat">
+				<div class="stat-k muted">访问次数</div>
+				<div class="stat-v" data-site-views>—</div>
+			</div>
 		</div>
 	</section>
 
@@ -54,24 +83,52 @@ const latest = posts.slice(0, 8);
 	.hero {
 		padding: 22px 18px;
 		display: grid;
-		gap: 8px;
+		gap: 12px;
+	}
+
+	.hero-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
 	}
 
 	.hero-title {
-		font-size: clamp(22px, 4.2vw, 34px);
+		font-size: clamp(18px, 4.2vw, 28px);
 		font-weight: 800;
 		letter-spacing: 0.2px;
-	}
-
-	.hero-sub {
-		margin: 0;
 	}
 
 	.hero-actions {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 10px;
-		margin-top: 6px;
+		justify-content: flex-end;
+	}
+
+	.stats {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 12px;
+	}
+
+	.stat {
+		padding: 12px 14px;
+		border-radius: 14px;
+		border: 1px solid var(--border);
+		background: color-mix(in oklab, rgba(255, 255, 255, 0.06), transparent 15%);
+		display: grid;
+		gap: 4px;
+	}
+
+	.stat-k {
+		font-size: 12px;
+	}
+
+	.stat-v {
+		font-size: 18px;
+		font-weight: 800;
+		letter-spacing: 0.2px;
 	}
 
 	.section {
@@ -127,6 +184,9 @@ const latest = posts.slice(0, 8);
 			grid-template-columns: 1fr;
 		}
 		.cats {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.stats {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}

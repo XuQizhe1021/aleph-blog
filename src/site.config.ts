@@ -1,6 +1,6 @@
 export const siteConfig = {
 	title: 'XQZ的小屋',
-	description: '一个支持 Markdown / LaTeX / 搜索 / 分类 的个人博客',
+	description: '一个小小的个人博客',
 	author: 'aleph blanc',
 	rewardImagePath: '/reward.png',
 	nav: [

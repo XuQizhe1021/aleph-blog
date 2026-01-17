@@ -32,12 +32,10 @@ body {
 }
 
 body {
+	position: relative;
 	margin: 0;
 	color: var(--text);
-	background:
-		radial-gradient(1200px 600px at 20% 20%, rgba(124, 58, 237, 0.25), transparent 60%),
-		radial-gradient(1000px 520px at 80% 15%, rgba(34, 197, 94, 0.18), transparent 55%),
-		var(--bg);
+	background: var(--bg);
 	font-family:
 		ui-sans-serif,
 		system-ui,
@@ -49,6 +47,52 @@ body {
 		'Noto Sans',
 		'Apple Color Emoji',
 		'Segoe UI Emoji';
+}
+
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: -1;
+	opacity: 0.42;
+	background:
+		linear-gradient(
+			90deg,
+			#ff3b30,
+			#ff9500,
+			#ffd60a,
+			#34c759,
+			#32ade6,
+			#007aff,
+			#af52de,
+			#007aff,
+			#32ade6,
+			#34c759,
+			#ffd60a,
+			#ff9500,
+			#ff3b30
+		);
+	background-size: 420% 420%;
+	-webkit-mask-image:
+		repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 44px),
+		repeating-linear-gradient(90deg, #000 0 1px, transparent 1px 44px);
+	-webkit-mask-position: 0 0, 0 0;
+	-webkit-mask-repeat: repeat, repeat;
+	filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.2)) saturate(1.15);
+	animation: grid-flow 12s linear infinite;
+}
+
+@keyframes grid-flow {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
 }
 
 a {
@@ -158,4 +202,3 @@ a:hover {
 .heading-anchor:hover {
 	opacity: 1;
 }
-

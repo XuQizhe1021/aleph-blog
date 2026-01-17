@@ -1,7 +1,7 @@
 export const siteConfig = {
-	title: '我的博客',
+	title: 'XQZ的小屋',
 	description: '一个支持 Markdown / LaTeX / 搜索 / 分类 的个人博客',
-	author: '你的名字',
+	author: 'aleph blanc',
 	rewardImagePath: '/reward.png',
 	nav: [
 		{ href: '/', label: '首页' },
@@ -11,4 +11,3 @@ export const siteConfig = {
 		{ href: '/about', label: '关于' },
 	],
 } as const;
-

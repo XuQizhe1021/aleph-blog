@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.6",
-    "@astrojs/rss": "^4.0.12",
     "astro": "^5.16.11",
     "express": "^4.21.2",
     "fuse.js": "^7.1.0",

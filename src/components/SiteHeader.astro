@@ -8,7 +8,6 @@ import { siteConfig } from '../site.config';
 			<span class="brand-dot" aria-hidden="true"></span>
 			<span class="brand-text">{siteConfig.title}</span>
 		</a>
-		<button class="btn menu-btn" id="menu-toggle" type="button" aria-label="打开菜单">菜单</button>
 		<nav class="nav" aria-label="主导航">
 			{siteConfig.nav.map((item) => (
 				<a class="nav-link" href={item.href}>
@@ -20,22 +19,6 @@ import { siteConfig } from '../site.config';
 			<button class="btn" id="theme-toggle" type="button">
 				<span class="muted" id="theme-label">主题</span>
 			</button>
-		</div>
-	</div>
-	<div class="drawer" id="drawer" hidden>
-		<div class="drawer-backdrop" id="drawer-backdrop" aria-hidden="true"></div>
-		<div class="drawer-panel panel">
-			<div class="drawer-head">
-				<div class="drawer-title">{siteConfig.title}</div>
-				<button class="btn" id="drawer-close" type="button">关闭</button>
-			</div>
-			<nav class="drawer-nav" aria-label="移动端导航">
-				{siteConfig.nav.map((item) => (
-					<a class="drawer-link" href={item.href}>
-						{item.label}
-					</a>
-				))}
-			</nav>
 		</div>
 	</div>
 	<script is:inline>
@@ -51,29 +34,6 @@ import { siteConfig } from '../site.config';
 			};
 			set(get());
 			btn?.addEventListener('click', () => set(get() === 'dark' ? 'light' : 'dark'));
-
-			const drawer = document.getElementById('drawer');
-			const openBtn = document.getElementById('menu-toggle');
-			const closeBtn = document.getElementById('drawer-close');
-			const backdrop = document.getElementById('drawer-backdrop');
-
-			const setDrawer = (open) => {
-				if (!drawer) return;
-				drawer.hidden = !open;
-				document.body.style.overflow = open ? 'hidden' : '';
-			};
-
-			openBtn?.addEventListener('click', () => setDrawer(true));
-			closeBtn?.addEventListener('click', () => setDrawer(false));
-			backdrop?.addEventListener('click', () => setDrawer(false));
-			window.addEventListener('keydown', (e) => {
-				if (e.key === 'Escape') setDrawer(false);
-			});
-
-			drawer?.addEventListener('click', (e) => {
-				const a = e.target?.closest?.('a');
-				if (a) setDrawer(false);
-			});
 		})();
 	</script>
 </header>
@@ -82,7 +42,7 @@ import { siteConfig } from '../site.config';
 	.site-header {
 		position: sticky;
 		top: 0;
-		z-index: 20;
+		z-index: 100;
 		border-bottom: 1px solid var(--border);
 		background: color-mix(in oklab, var(--panel-strong), transparent 20%);
 		backdrop-filter: blur(16px);
@@ -122,10 +82,8 @@ import { siteConfig } from '../site.config';
 		display: flex;
 		align-items: center;
 		gap: 8px;
-	}
-
-	.menu-btn {
-		display: none;
+		flex-wrap: wrap;
+		justify-content: center;
 	}
 
 	.nav-link {
@@ -146,68 +104,22 @@ import { siteConfig } from '../site.config';
 		align-items: center;
 		gap: 8px;
 	}
-
-	.drawer {
-		position: fixed;
-		inset: 0;
-		z-index: 60;
-		display: grid;
-	}
-
-	.drawer-backdrop {
-		position: absolute;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.35);
-		backdrop-filter: blur(4px);
-	}
-
-	.drawer-panel {
-		position: relative;
-		width: min(420px, calc(100% - 24px));
-		margin: 12px;
-		padding: 14px;
-		align-self: start;
-		justify-self: end;
-		display: grid;
-		gap: 12px;
-	}
-
-	.drawer-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-	}
-
-	.drawer-title {
-		font-weight: 800;
-	}
-
-	.drawer-nav {
-		display: grid;
-		gap: 8px;
-	}
-
-	.drawer-link {
-		padding: 10px 12px;
-		border-radius: 12px;
-		border: 1px solid var(--border);
-		background: color-mix(in oklab, var(--panel-strong), transparent 18%);
-		text-decoration: none;
-		color: var(--text);
-	}
-
-	.drawer-link:hover {
-		text-decoration: none;
-		border-color: color-mix(in oklab, var(--accent), var(--border) 30%);
-	}
-
 	@media (max-width: 720px) {
-		.nav {
-			display: none;
+		.inner {
+			height: auto;
+			padding: 10px 0;
+			align-items: start;
 		}
-		.menu-btn {
-			display: inline-flex;
+		.nav {
+			width: 100%;
+			justify-content: flex-start;
+			overflow-x: auto;
+			flex-wrap: nowrap;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
+		}
+		.nav::-webkit-scrollbar {
+			display: none;
 		}
 	}
 </style>

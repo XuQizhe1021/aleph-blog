@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getPublicPosts, getAllCategories } from '../../utils/blog';
+import { withBase } from '../../utils/paths';
 
 const posts = await getPublicPosts();
 const categories = getAllCategories(posts);
@@ -15,7 +16,7 @@ const categories = getAllCategories(posts);
 	<section class="grid">
 		{categories.length ? (
 			categories.map((c) => (
-				<a class="cat panel" href={`/categories/${encodeURIComponent(c.category)}`}>
+				<a class="cat panel" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
 					<div class="name">{c.category}</div>
 					<div class="muted">{c.count} 篇</div>
 				</a>

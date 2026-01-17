@@ -1,5 +1,6 @@
 ---
 import { siteConfig } from '../site.config';
+import { withBase } from '../utils/paths';
 ---
 
 <aside class="reward" id="reward-panel" aria-label="打赏面板">
@@ -9,7 +10,7 @@ import { siteConfig } from '../site.config';
 		<img
 			id="reward-image"
 			class="reward-image"
-			src={siteConfig.rewardImagePath}
+			src={withBase(siteConfig.rewardImagePath)}
 			alt="打赏二维码"
 			loading="lazy"
 		/>
@@ -81,4 +82,3 @@ import { siteConfig } from '../site.config';
 		}
 	}
 </style>
-

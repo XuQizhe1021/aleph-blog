@@ -1,6 +1,7 @@
 ---
 import type { BlogEntry } from '../utils/blog';
 import { getCategory } from '../utils/blog';
+import { withBase } from '../utils/paths';
 
 type Props = { post: BlogEntry };
 const { post } = Astro.props;
@@ -9,13 +10,13 @@ const category = getCategory(post);
 
 <article class="post-card panel">
 	<div class="meta">
-		<a class="title" href={`/posts/${post.slug}`}>{post.data.title}</a>
+		<a class="title" href={withBase(`/posts/${post.slug}`)}>{post.data.title}</a>
 		<div class="sub muted">
 			<time datetime={post.data.pubDate.toISOString()}>
 				{post.data.pubDate.toLocaleDateString('zh-CN')}
 			</time>
 			<span class="dot" aria-hidden="true">·</span>
-			<a class="cat" href={`/categories/${encodeURIComponent(category)}`}>{category}</a>
+			<a class="cat" href={withBase(`/categories/${encodeURIComponent(category)}`)}>{category}</a>
 		</div>
 	</div>
 	{post.data.description && <p class="desc muted">{post.data.description}</p>}
@@ -78,4 +79,3 @@ const category = getCategory(post);
 		gap: 8px;
 	}
 </style>
-

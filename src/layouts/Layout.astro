@@ -5,6 +5,7 @@ import RewardPanel from '../components/RewardPanel.astro';
 import { siteConfig } from '../site.config';
 import '../styles/global.css';
 import 'katex/dist/katex.min.css';
+import { withBase } from '../utils/paths';
 
 type Props = {
 	title?: string;
@@ -21,7 +22,7 @@ const pageDescription = description ?? siteConfig.description;
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{pageTitle}</title>
 		<meta name="description" content={pageDescription} />

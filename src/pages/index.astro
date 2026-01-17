@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import PostCard from '../components/PostCard.astro';
 import { getPublicPosts, getAllCategories } from '../utils/blog';
+import { withBase } from '../utils/paths';
 
 const posts = await getPublicPosts();
 const categories = getAllCategories(posts).slice(0, 8);
@@ -14,15 +15,15 @@ const latest = posts.slice(0, 8);
 		<div class="hero-title">欢迎来到我的博客</div>
 		<p class="hero-sub muted">支持 Markdown、LaTeX、分类、全文搜索与舒适阅读体验。</p>
 		<div class="hero-actions">
-			<a class="btn" href="/posts">浏览文章</a>
-			<a class="btn" href="/search">搜索</a>
+			<a class="btn" href={withBase('/posts')}>浏览文章</a>
+			<a class="btn" href={withBase('/search')}>搜索</a>
 		</div>
 	</section>
 
 	<section class="section">
 		<div class="section-head">
 			<h2>最新文章</h2>
-			<a class="muted" href="/posts">查看全部 →</a>
+			<a class="muted" href={withBase('/posts')}>查看全部 →</a>
 		</div>
 		<div class="grid">
 			{latest.length ? latest.map((post) => <PostCard post={post} />) : <div class="muted">暂无文章</div>}
@@ -32,12 +33,12 @@ const latest = posts.slice(0, 8);
 	<section class="section">
 		<div class="section-head">
 			<h2>热门分类</h2>
-			<a class="muted" href="/categories">查看全部 →</a>
+			<a class="muted" href={withBase('/categories')}>查看全部 →</a>
 		</div>
 		<div class="cats">
 			{categories.length ? (
 				categories.map((c) => (
-					<a class="cat panel" href={`/categories/${encodeURIComponent(c.category)}`}>
+					<a class="cat panel" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
 						<div class="cat-name">{c.category}</div>
 						<div class="cat-count muted">{c.count} 篇</div>
 					</a>

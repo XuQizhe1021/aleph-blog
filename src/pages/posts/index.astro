@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import PostCard from '../../components/PostCard.astro';
 import { getPublicPosts, getAllCategories } from '../../utils/blog';
+import { withBase } from '../../utils/paths';
 
 const posts = await getPublicPosts();
 const categories = getAllCategories(posts);
@@ -16,9 +17,9 @@ const categories = getAllCategories(posts);
 	<section class="filters panel">
 		<div class="label muted">分类</div>
 		<div class="chips">
-			<a class="chip" href="/posts">全部</a>
+			<a class="chip" href={withBase('/posts')}>全部</a>
 			{categories.map((c) => (
-				<a class="chip" href={`/categories/${encodeURIComponent(c.category)}`}>
+				<a class="chip" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
 					{c.category} <span class="muted">({c.count})</span>
 				</a>
 			))}
@@ -81,4 +82,3 @@ const categories = getAllCategories(posts);
 		gap: 12px;
 	}
 </style>
-

@@ -1,5 +1,6 @@
 ---
 import { siteConfig } from '../site.config';
+import { withBase } from '../utils/paths';
 ---
 
 <header class="site-header">
@@ -10,7 +11,7 @@ import { siteConfig } from '../site.config';
 		</a>
 		<nav class="nav" aria-label="主导航">
 			{siteConfig.nav.map((item) => (
-				<a class="nav-link" href={item.href}>
+				<a class="nav-link" href={withBase(item.href)}>
 					{item.label}
 				</a>
 			))}

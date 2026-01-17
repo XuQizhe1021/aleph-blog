@@ -36,7 +36,7 @@ npm run dev:all
 
 - `src/content/blog/*.md`
 
-这时一大缺点，文章会占用你的本地存储，我也在考虑要不要升级一下，但估计要鸽。
+这是一大缺点，文章会占用你的本地存储，我也在考虑要不要升级一下，但估计要鸽。
 
 文章 Frontmatter（头部信息）示例，所以如果一个文章的相关信息你觉得设置得不好，你可以从源码层面直接更改：
 
@@ -46,7 +46,7 @@ title: 我的第一篇文章
 description: 一句话简介（可选）
 pubDate: 2026-01-17
 category: 
-  -分类
+  - 分类
 draft: false
 ---
 ```
@@ -61,7 +61,6 @@ error: src refspec main does not match any
 
 常见原因是“你本地当前分支不叫 main”。
 
-把本地分支重命名为 main，再推送
 把本地分支重命名为 main，再推送
 
 ```bash

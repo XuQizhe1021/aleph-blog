@@ -120,14 +120,12 @@ const primaryCategory = getPrimaryCategory(post);
 	.side {
 		display: grid;
 		gap: 14px;
+		align-self: stretch;
 	}
 
 	@media (max-width: 980px) {
 		.article-body {
 			grid-template-columns: 1fr;
-		}
-		.side {
-			order: -1;
 		}
 	}
 

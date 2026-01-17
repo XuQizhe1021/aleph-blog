@@ -3,10 +3,12 @@ import multer from 'multer';
 import fs from 'node:fs/promises';
 import fssync from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import matter from 'gray-matter';
 import MarkdownIt from 'markdown-it';
 import markdownItKatex from 'markdown-it-katex';
 import anchor from 'markdown-it-anchor';
+import iconv from 'iconv-lite';
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -30,6 +32,29 @@ md.use(anchor, { level: [1, 2, 3, 4], permalink: false });
 function safeBasename(fileName) {
 	const base = path.parse(fileName).name;
 	return base.trim().replace(/[\\/:*?"<>|]/g, '_');
+}
+
+function decodePossiblyMojibakeName(name) {
+	try {
+		const decoded = Buffer.from(name, 'latin1').toString('utf-8');
+		if (decoded && !decoded.includes('\uFFFD')) return decoded;
+	} catch {}
+	return name;
+}
+
+function decodeMarkdownBuffer(buf) {
+	const utf8 = buf.toString('utf-8');
+	if (!utf8.includes('\uFFFD')) return utf8;
+	try {
+		const gbk = iconv.decode(buf, 'gbk');
+		if (gbk && !gbk.includes('\uFFFD')) return gbk;
+	} catch {}
+	return utf8;
+}
+
+async function readTextFile(filePath) {
+	const buf = await fs.readFile(filePath);
+	return decodeMarkdownBuffer(buf);
 }
 
 async function readPostFile(slug) {
@@ -65,6 +90,22 @@ function normalizeFrontmatter(data) {
 	return out;
 }
 
+function isLocalRequest(req) {
+	const ip = req.ip ?? '';
+	return ip.includes('127.0.0.1') || ip.includes('::1') || ip === '::ffff:127.0.0.1';
+}
+
+function runGit(args, cwd) {
+	return new Promise((resolve) => {
+		const child = spawn('git', args, { cwd, windowsHide: true });
+		let stdout = '';
+		let stderr = '';
+		child.stdout.on('data', (d) => (stdout += String(d)));
+		child.stderr.on('data', (d) => (stderr += String(d)));
+		child.on('close', (code) => resolve({ code: Number(code ?? 0), stdout, stderr }));
+	});
+}
+
 app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));
 
@@ -82,7 +123,7 @@ app.get('/api/posts', async (_req, res) => {
 		const posts = await Promise.all(
 			files.map(async (file) => {
 				const full = path.join(postsDir, file);
-				const raw = await fs.readFile(full, 'utf-8');
+				const raw = await readTextFile(full);
 				const parsed = matter(raw);
 				const slug = path.parse(file).name;
 				const data = normalizeFrontmatter(parsed.data ?? {});
@@ -111,7 +152,7 @@ app.get('/api/posts/:slug', async (req, res) => {
 		const slug = req.params.slug;
 		const filePath = await readPostFile(slug);
 		if (!filePath) return res.status(404).json({ error: 'not_found' });
-		const raw = await fs.readFile(filePath, 'utf-8');
+		const raw = await readTextFile(filePath);
 		const parsed = matter(raw);
 		const data = normalizeFrontmatter(parsed.data ?? {});
 		res.json({
@@ -130,18 +171,24 @@ app.post('/api/posts/upload', upload.single('file'), async (req, res) => {
 	try {
 		const file = req.file;
 		if (!file) return res.status(400).json({ error: 'missing_file' });
-		const slug = safeBasename(file.originalname);
+		const originalname = decodePossiblyMojibakeName(file.originalname);
+		const slug = safeBasename(originalname);
 		const targetPath = path.join(postsDir, `${slug}.md`);
 
-		const incomingRaw = file.buffer.toString('utf-8');
+		const incomingRaw = decodeMarkdownBuffer(file.buffer);
 		const incomingParsed = matter(incomingRaw);
 
 		let data = normalizeFrontmatter(incomingParsed.data ?? {});
 		if (data.title === '未命名') data.title = slug;
+		const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+		if (title) data.title = title;
+		const category =
+			typeof req.body?.category === 'string' ? req.body.category.trim() : '';
+		if (category) data.category = category;
 
 		const existingPath = await readPostFile(slug);
 		if (existingPath) {
-			const existingRaw = await fs.readFile(existingPath, 'utf-8');
+			const existingRaw = await readTextFile(existingPath);
 			const existingParsed = matter(existingRaw);
 			const existingData = normalizeFrontmatter(existingParsed.data ?? {});
 			if (!incomingParsed.data?.pubDate) data.pubDate = existingData.pubDate;
@@ -154,6 +201,108 @@ app.post('/api/posts/upload', upload.single('file'), async (req, res) => {
 			await fs.unlink(existingPath);
 		}
 		res.json({ ok: true, slug, file: path.basename(targetPath) });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
+
+app.get('/api/categories', async (_req, res) => {
+	try {
+		const files = (await fs.readdir(postsDir)).filter((f) => /\.(md|mdx)$/i.test(f));
+		const counts = new Map();
+		for (const file of files) {
+			const full = path.join(postsDir, file);
+			const raw = await readTextFile(full);
+			const parsed = matter(raw);
+			const data = normalizeFrontmatter(parsed.data ?? {});
+			const c = typeof data.category === 'string' && data.category ? data.category : '未分类';
+			counts.set(c, (counts.get(c) ?? 0) + 1);
+		}
+		const categories = Array.from(counts.entries())
+			.map(([name, count]) => ({ name, count }))
+			.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+		res.json({ categories });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
+
+app.post('/api/categories/rename', async (req, res) => {
+	try {
+		const from = typeof req.body?.from === 'string' ? req.body.from.trim() : '';
+		const to = typeof req.body?.to === 'string' ? req.body.to.trim() : '';
+		if (!from) return res.status(400).json({ error: 'missing_from' });
+		if (from === to) return res.json({ ok: true, changed: 0 });
+		const files = (await fs.readdir(postsDir)).filter((f) => /\.(md|mdx)$/i.test(f));
+		let changed = 0;
+		for (const file of files) {
+			const full = path.join(postsDir, file);
+			const raw = await readTextFile(full);
+			const parsed = matter(raw);
+			const data = normalizeFrontmatter(parsed.data ?? {});
+			const current = typeof data.category === 'string' && data.category ? data.category : '未分类';
+			if (current !== from) continue;
+			if (to && to !== '未分类') data.category = to;
+			else delete data.category;
+			data.updatedDate = new Date().toISOString();
+			const out = matter.stringify(parsed.content ?? '', data);
+			await fs.writeFile(full, out, 'utf-8');
+			changed++;
+		}
+		res.json({ ok: true, changed });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
+
+app.delete('/api/categories/:name', async (req, res) => {
+	try {
+		const name = decodeURIComponent(req.params.name ?? '').trim();
+		if (!name) return res.status(400).json({ error: 'missing_name' });
+		const files = (await fs.readdir(postsDir)).filter((f) => /\.(md|mdx)$/i.test(f));
+		let changed = 0;
+		for (const file of files) {
+			const full = path.join(postsDir, file);
+			const raw = await readTextFile(full);
+			const parsed = matter(raw);
+			const data = normalizeFrontmatter(parsed.data ?? {});
+			const current = typeof data.category === 'string' && data.category ? data.category : '未分类';
+			if (current !== name) continue;
+			delete data.category;
+			data.updatedDate = new Date().toISOString();
+			const out = matter.stringify(parsed.content ?? '', data);
+			await fs.writeFile(full, out, 'utf-8');
+			changed++;
+		}
+		res.json({ ok: true, changed });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
+
+app.post('/api/publish', async (req, res) => {
+	try {
+		if (!isLocalRequest(req)) return res.status(403).json({ error: 'forbidden' });
+		const status = await runGit(['status', '--porcelain'], projectRoot);
+		if (status.code !== 0) return res.status(500).json({ error: status.stderr || status.stdout });
+		if (!status.stdout.trim()) return res.json({ ok: true, message: 'no_changes' });
+		const add = await runGit(['add', '-A'], projectRoot);
+		if (add.code !== 0) return res.status(500).json({ error: add.stderr || add.stdout });
+		const msg =
+			typeof req.body?.message === 'string' && req.body.message.trim()
+				? req.body.message.trim()
+				: `publish ${new Date().toISOString()}`;
+		const commit = await runGit(['commit', '-m', msg], projectRoot);
+		if (commit.code !== 0)
+			return res.status(500).json({ error: commit.stderr || commit.stdout });
+		const push = await runGit(['push'], projectRoot);
+		if (push.code !== 0) return res.status(500).json({ error: push.stderr || push.stdout });
+		res.json({
+			ok: true,
+			output: [status.stdout, commit.stdout, commit.stderr, push.stdout, push.stderr]
+				.filter(Boolean)
+				.join('\n'),
+		});
 	} catch (e) {
 		res.status(500).json({ error: String(e) });
 	}
@@ -175,7 +324,8 @@ app.post('/api/reward-image', upload.single('file'), async (req, res) => {
 	try {
 		const file = req.file;
 		if (!file) return res.status(400).json({ error: 'missing_file' });
-		const ext = (path.extname(file.originalname) || '.png').toLowerCase();
+		const originalname = decodePossiblyMojibakeName(file.originalname);
+		const ext = (path.extname(originalname) || '.png').toLowerCase();
 		const target = path.join(publicDir, `reward${ext}`);
 		await fs.writeFile(target, file.buffer);
 		res.json({ ok: true, path: `/reward${ext}` });
@@ -208,4 +358,3 @@ const port = Number(process.env.ADMIN_PORT ?? 4322);
 app.listen(port, () => {
 	console.log(`Admin running at http://localhost:${port}/admin`);
 });
-

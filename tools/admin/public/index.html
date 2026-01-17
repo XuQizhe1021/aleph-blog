@@ -20,6 +20,8 @@
 						上传打赏图
 						<input id="upload-reward" type="file" accept="image/*" hidden />
 					</label>
+					<button class="btn" id="manage-categories" type="button">分类管理</button>
+					<button class="btn" id="publish" type="button">发布到GitHub</button>
 					<button class="btn" id="refresh" type="button">刷新</button>
 				</div>
 			</header>
@@ -55,7 +57,17 @@
 				</section>
 			</div>
 		</div>
+		<div class="modal" id="modal" hidden>
+			<div class="modal-backdrop" id="modal-backdrop" aria-hidden="true"></div>
+			<div class="modal-panel panel" role="dialog" aria-modal="true" aria-label="对话框">
+				<div class="modal-head">
+					<div class="modal-title" id="modal-title"></div>
+					<button class="btn" id="modal-close" type="button">关闭</button>
+				</div>
+				<div class="modal-body" id="modal-body"></div>
+				<div class="modal-actions" id="modal-actions"></div>
+			</div>
+		</div>
 		<script type="module" src="/admin/app.js"></script>
 	</body>
 </html>
-

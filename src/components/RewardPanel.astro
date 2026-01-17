@@ -14,6 +14,7 @@ import { withBase } from '../utils/paths';
 			alt="打赏二维码"
 			loading="lazy"
 		/>
+		<div class="reward-fallback muted" id="reward-fallback" hidden>未配置打赏图片</div>
 	</div>
 	<script is:inline>
 		(() => {
@@ -21,11 +22,14 @@ import { withBase } from '../utils/paths';
 			const card = document.getElementById('reward-card');
 			const img = document.getElementById('reward-image');
 			const panel = document.getElementById('reward-panel');
+			const fallback = document.getElementById('reward-fallback');
 			const key = 'reward_open';
 
 			if (img) {
 				img.addEventListener('error', () => {
-					if (panel) panel.style.display = 'none';
+					img.style.display = 'none';
+					if (fallback) fallback.hidden = false;
+					if (panel) panel.style.display = '';
 				});
 			}
 
@@ -73,6 +77,11 @@ import { withBase } from '../utils/paths';
 		border-radius: 12px;
 		border: 1px solid var(--border);
 		background: color-mix(in oklab, var(--panel-strong), transparent 10%);
+	}
+
+	.reward-fallback {
+		font-size: 13px;
+		padding: 12px 2px 4px;
 	}
 
 	@media (max-width: 720px) {

@@ -9,9 +9,8 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 <aside class="toc panel" aria-label="目录">
 	<div class="toc-head">
 		<div class="toc-title">目录</div>
-		<button class="btn toc-toggle" id="toc-toggle" type="button">收起</button>
 	</div>
-	<nav class="toc-body" id="toc-body">
+	<nav class="toc-body">
 		{visible.length ? (
 			<ul>
 				{visible.map((h) => (
@@ -24,54 +23,40 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 			<div class="muted empty">无标题</div>
 		)}
 	</nav>
-	<script is:inline>
-		(() => {
-			const key = 'toc_collapsed';
-			const btn = document.getElementById('toc-toggle');
-			const body = document.getElementById('toc-body');
-
-			const setCollapsed = (collapsed) => {
-				if (!body) return;
-				body.style.display = collapsed ? 'none' : 'block';
-				if (btn) btn.textContent = collapsed ? '展开' : '收起';
-				localStorage.setItem(key, collapsed ? '1' : '0');
-			};
-
-			setCollapsed(localStorage.getItem(key) === '1');
-			btn?.addEventListener('click', () => setCollapsed(body?.style.display !== 'none'));
-		})();
-	</script>
 </aside>
 
 <style>
 	.toc {
-		padding: 14px 14px 12px;
+		padding: 14px;
 		position: sticky;
 		top: 78px;
 		max-height: calc(100vh - 110px);
 		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 	}
 
 	.toc-head {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		gap: 10px;
-		margin-bottom: 10px;
 	}
 
 	.toc-title {
 		font-weight: 650;
 	}
 
-	.toc-toggle {
-		height: 30px;
-		padding: 0 10px;
-	}
-
 	.toc-body {
 		overflow: auto;
 		padding-right: 4px;
+		min-height: 0;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.toc-body::-webkit-scrollbar {
+		display: none;
 	}
 
 	ul {

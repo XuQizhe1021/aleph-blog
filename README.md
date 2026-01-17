@@ -16,7 +16,7 @@
 在项目根目录运行：
 
 ```bash
-npm install
+npm install #仅在首次
 npm run dev:all
 ```
 
@@ -30,12 +30,15 @@ npm run dev:all
 进入管理后台后：
 
 我觉得你应该会自己摸索出使用方法。(●'◡'●)
+我觉得你应该会自己摸索出使用方法。(●'◡'●)
 
 文章文件存放位置：
 
 - `src/content/blog/*.md`
 
-文章 Frontmatter（头部信息）示例：
+这时一大缺点，文章会占用你的本地存储，我也在考虑要不要升级一下，但估计要鸽。
+
+文章 Frontmatter（头部信息）示例，所以如果一个文章的相关信息你觉得设置得不好，你可以从源码层面直接更改：
 
 ```md
 ---
@@ -59,6 +62,7 @@ error: src refspec main does not match any
 常见原因是“你本地当前分支不叫 main”。
 
 把本地分支重命名为 main，再推送
+把本地分支重命名为 main，再推送
 
 ```bash
 git branch -M main
@@ -78,6 +82,7 @@ GitHub 仓库页面：
 
 - 项目页：`https://<用户名>.github.io/<仓库名>/`
 - 如果仓库名就是 `<用户名>.github.io`（用户主页仓库）：`https://<用户名>.github.io/`
+
 
 但如果你直接使用我的代码的话，我建议你不要直接给仓库起名 `<用户名>.github.io`，而是起个别的名字，例如 `blog`。
 

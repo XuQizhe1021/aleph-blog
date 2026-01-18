@@ -1,6 +1,7 @@
 export async function GET({ site }: { site: URL }) {
-	const base = site ?? new URL('http://localhost:4321');
-	const sitemap = new URL('/sitemap.xml', base).toString();
+	const origin = site ?? new URL('http://localhost:4321');
+	const base = new URL(import.meta.env.BASE_URL ?? '/', origin);
+	const sitemap = new URL('sitemap.xml', base).toString();
 	const body = `User-agent: *\nAllow: /\n\nSitemap: ${sitemap}\n`;
 	return new Response(body, {
 		headers: {
@@ -8,4 +9,3 @@ export async function GET({ site }: { site: URL }) {
 		},
 	});
 }
-

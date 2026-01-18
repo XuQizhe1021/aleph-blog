@@ -1,6 +1,6 @@
 ---
 type Heading = { depth: number; slug: string; text: string };
-type Props = { headings: Heading[]; variant?: 'sidebar' | 'drawer' };
+type Props = { headings: Heading[]; variant?: 'sidebar' | 'drawer' | 'floating' };
 
 const { headings, variant = 'sidebar' } = Astro.props;
 const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
@@ -54,6 +54,55 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 				btn.addEventListener('click', () => setOpen(root.dataset.open !== '1'));
 				window.addEventListener('resize', () => {
 					if (root.dataset.open === '1') wrap.style.maxHeight = `${computeOpenHeight()}px`;
+				});
+				root.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+			})();
+		</script>
+	</section>
+) : variant === 'floating' ? (
+	<section class="toc-float" aria-label="目录" data-open="0">
+		<button class="toc-float-btn" type="button" aria-expanded="false">
+			<span class="toc-float-btn-text">目录</span>
+		</button>
+		<div class="toc-float-panel panel" aria-hidden="true">
+			<div class="toc-float-head">
+				<div class="toc-title">目录</div>
+				<button class="btn toc-float-close" type="button">关闭</button>
+			</div>
+			<nav class="toc-body">
+				{visible.length ? (
+					<ul>
+						{visible.map((h) => (
+							<li class={`d${h.depth}`}>
+								<a href={`#${h.slug}`}>{h.text}</a>
+							</li>
+						))}
+					</ul>
+				) : (
+					<div class="muted empty">无标题</div>
+				)}
+			</nav>
+		</div>
+		<script is:inline>
+			(() => {
+				const root = document.currentScript?.parentElement;
+				if (!root) return;
+				const openBtn = root.querySelector('.toc-float-btn');
+				const closeBtn = root.querySelector('.toc-float-close');
+				const panel = root.querySelector('.toc-float-panel');
+				if (!(openBtn instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
+
+				const setOpen = (open) => {
+					root.dataset.open = open ? '1' : '0';
+					openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+					panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+				};
+
+				setOpen(false);
+				openBtn.addEventListener('click', () => setOpen(root.dataset.open !== '1'));
+				if (closeBtn instanceof HTMLButtonElement) closeBtn.addEventListener('click', () => setOpen(false));
+				window.addEventListener('keydown', (e) => {
+					if (e.key === 'Escape') setOpen(false);
 				});
 				root.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
 			})();
@@ -155,6 +204,90 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 
 	.toc-body::-webkit-scrollbar {
 		display: none;
+	}
+
+	.toc-float {
+		display: none;
+	}
+
+	.toc-float-panel {
+		display: none;
+	}
+
+	@media (max-width: 980px) {
+		.toc-float {
+			display: block;
+		}
+
+		.toc-float-btn {
+			position: fixed;
+			right: 12px;
+			bottom: 84px;
+			z-index: 95;
+			height: 38px;
+			padding: 0 14px;
+			border-radius: 999px;
+			border: 1px solid var(--border);
+			background: color-mix(in oklab, var(--panel-strong), transparent 20%);
+			backdrop-filter: blur(16px);
+			color: var(--text);
+			cursor: pointer;
+		}
+
+		.toc-float-btn:hover {
+			border-color: color-mix(in oklab, var(--accent), var(--border) 35%);
+		}
+
+		.toc-float-panel {
+			position: fixed;
+			right: 12px;
+			left: 12px;
+			top: calc(var(--site-header-height, 72px) + 10px);
+			bottom: 84px;
+			z-index: 96;
+			padding: 12px 14px;
+			display: grid;
+			grid-template-rows: auto 1fr;
+			gap: 10px;
+			background: color-mix(in oklab, var(--panel-strong), transparent 20%);
+			backdrop-filter: blur(16px);
+			overflow: hidden;
+			opacity: 0;
+			transform: translateY(10px);
+			pointer-events: none;
+			transition:
+				opacity 180ms ease,
+				transform 220ms ease;
+		}
+
+		.toc-float[data-open='1'] .toc-float-panel {
+			opacity: 1;
+			transform: translateY(0);
+			pointer-events: auto;
+		}
+
+		.toc-float[data-open='1'] .toc-float-btn {
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		.toc-float-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 10px;
+		}
+
+		.toc-float-panel .toc-body {
+			min-height: 0;
+			overflow: auto;
+			scrollbar-width: none;
+			-ms-overflow-style: none;
+		}
+
+		.toc-float-panel .toc-body::-webkit-scrollbar {
+			display: none;
+		}
 	}
 
 	ul {

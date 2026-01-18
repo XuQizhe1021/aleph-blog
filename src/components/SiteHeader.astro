@@ -25,21 +25,14 @@ import { withBase } from '../utils/paths';
 			</button>
 		</div>
 	</div>
-	<div class="drawer" id="nav-drawer" aria-hidden="true">
-		<div class="drawer-backdrop" id="nav-backdrop"></div>
-		<div class="drawer-panel panel">
-			<div class="drawer-head">
-				<div class="drawer-title">导航</div>
-				<button class="btn" id="nav-close" type="button">关闭</button>
-			</div>
-			<nav class="drawer-links" aria-label="移动端导航">
-				{siteConfig.nav.map((item) => (
-					<a class="drawer-link" href={withBase(item.href)}>
-						{item.label}
-					</a>
-				))}
-			</nav>
-		</div>
+	<div class="nav-drop" id="nav-drawer" aria-hidden="true">
+		<nav class="nav-drop-inner" aria-label="移动端导航">
+			{siteConfig.nav.map((item) => (
+				<a class="nav-drop-link" href={withBase(item.href)}>
+					{item.label}
+				</a>
+			))}
+		</nav>
 	</div>
 	<script is:inline>
 		(() => {
@@ -60,8 +53,6 @@ import { withBase } from '../utils/paths';
 		(() => {
 			const root = document.documentElement;
 			const openBtn = document.getElementById('nav-toggle');
-			const closeBtn = document.getElementById('nav-close');
-			const backdrop = document.getElementById('nav-backdrop');
 			const drawer = document.getElementById('nav-drawer');
 
 			const setOpen = (open) => {
@@ -71,8 +62,6 @@ import { withBase } from '../utils/paths';
 			};
 
 			openBtn?.addEventListener('click', () => setOpen(root.dataset.navOpen !== '1'));
-			closeBtn?.addEventListener('click', () => setOpen(false));
-			backdrop?.addEventListener('click', () => setOpen(false));
 			window.addEventListener('keydown', (e) => {
 				if (e.key === 'Escape') setOpen(false);
 			});
@@ -156,42 +145,30 @@ import { withBase } from '../utils/paths';
 		display: none;
 	}
 
-	.drawer-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.45);
-		backdrop-filter: blur(6px);
-		z-index: 140;
+	.nav-drop {
+		display: none;
+		overflow: hidden;
+		max-height: 0;
+		opacity: 0;
+		transform: translateY(-10px);
+		transition:
+			max-height 260ms ease,
+			opacity 200ms ease,
+			transform 200ms ease;
+		border-top: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 20%);
+		backdrop-filter: blur(16px);
 	}
 
-	.drawer-panel {
-		position: fixed;
-		top: 74px;
-		left: 16px;
-		right: 16px;
-		z-index: 150;
-		padding: 14px;
-		display: grid;
-		gap: 12px;
-	}
-
-	.drawer-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.drawer-title {
-		font-weight: 800;
-	}
-
-	.drawer-links {
+	.nav-drop-inner {
+		width: min(1140px, calc(100% - 32px));
+		margin: 0 auto;
+		padding: 10px 0 14px;
 		display: grid;
 		gap: 8px;
 	}
 
-	.drawer-link {
+	.nav-drop-link {
 		padding: 12px 12px;
 		border-radius: 12px;
 		border: 1px solid var(--border);
@@ -200,13 +177,15 @@ import { withBase } from '../utils/paths';
 		text-decoration: none;
 	}
 
-	.drawer-link:hover {
+	.nav-drop-link:hover {
 		text-decoration: none;
 		border-color: color-mix(in oklab, var(--accent), var(--border) 35%);
 	}
 
-	html[data-nav-open='1'] .drawer {
-		display: block;
+	html[data-nav-open='1'] .nav-drop {
+		max-height: 320px;
+		opacity: 1;
+		transform: translateY(0);
 	}
 
 	@media (max-width: 720px) {
@@ -220,6 +199,9 @@ import { withBase } from '../utils/paths';
 		}
 		.menu {
 			display: inline-flex;
+		}
+		.nav-drop {
+			display: block;
 		}
 	}
 </style>

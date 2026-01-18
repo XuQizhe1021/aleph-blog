@@ -95,8 +95,10 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 	.toc-drawer {
 		padding: 12px 14px;
 		position: sticky;
-		top: 72px;
-		z-index: 70;
+		top: var(--site-header-height, 72px);
+		z-index: 90;
+		background: color-mix(in oklab, var(--panel-strong), transparent 20%);
+		backdrop-filter: blur(16px);
 	}
 
 	.toc-drawer-head {

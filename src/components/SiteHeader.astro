@@ -52,20 +52,29 @@ import { withBase } from '../utils/paths';
 	<script is:inline>
 		(() => {
 			const root = document.documentElement;
+			const header = document.querySelector('.site-header');
 			const openBtn = document.getElementById('nav-toggle');
 			const drawer = document.getElementById('nav-drawer');
+
+			const setHeaderHeight = () => {
+				if (!(header instanceof HTMLElement)) return;
+				root.style.setProperty('--site-header-height', `${header.offsetHeight}px`);
+			};
 
 			const setOpen = (open) => {
 				root.dataset.navOpen = open ? '1' : '';
 				if (drawer) drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
 				if (openBtn) openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+				requestAnimationFrame(() => setHeaderHeight());
 			};
 
+			setHeaderHeight();
 			openBtn?.addEventListener('click', () => setOpen(root.dataset.navOpen !== '1'));
 			window.addEventListener('keydown', (e) => {
 				if (e.key === 'Escape') setOpen(false);
 			});
 			drawer?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+			window.addEventListener('resize', () => setHeaderHeight());
 		})();
 	</script>
 </header>

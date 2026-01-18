@@ -6,14 +6,17 @@ import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 // https://astro.build/config
-const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
+const [repoOwner, repoName] = process.env.GITHUB_REPOSITORY?.split('/') ?? [];
 const isUserPagesRepo = Boolean(repoName && /\.github\.io$/i.test(repoName));
 const base =
 	process.env.ASTRO_BASE ??
 	(process.env.NODE_ENV === 'production' && repoName && !isUserPagesRepo ? `/${repoName}` : '');
+const site =
+	process.env.SITE_URL ??
+	(process.env.NODE_ENV === 'production' && repoOwner ? `https://${repoOwner}.github.io` : 'http://localhost:4321');
 
 export default defineConfig({
-	site: process.env.SITE_URL ?? 'http://localhost:4321',
+	site,
 	base,
 	markdown: {
 		remarkPlugins: [remarkMath],

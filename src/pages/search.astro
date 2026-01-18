@@ -4,7 +4,7 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout title="搜索">
 	<section class="panel search">
-		<div class="title">搜索</div>
+		<div class="search-title">搜索</div>
 		<div class="row">
 			<input id="q" class="input" placeholder="输入标题 / 内容关键词…" />
 			<button id="clear" class="btn" type="button">清空</button>
@@ -12,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
 		<div class="muted hint">支持标题、正文、分类联合匹配。</div>
 	</section>
 
-	<section id="results" class="results"></section>
+	<section id="results" class="results search-results"></section>
 
 	<script>
 		import Fuse from 'fuse.js';
@@ -47,29 +47,64 @@ import Layout from '../layouts/Layout.astro';
 			],
 		});
 
+		const escapeHtml = (s: string) =>
+			String(s).replace(/[&<>"']/g, (ch) => {
+				if (ch === '&') return '&amp;';
+				if (ch === '<') return '&lt;';
+				if (ch === '>') return '&gt;';
+				if (ch === '"') return '&quot;';
+				return '&#39;';
+			});
+
 		const render = (rows: Array<{ item: SearchItem } | SearchItem>, query: string) => {
 			if (!$results) return;
 			if (!query) {
-				$results.innerHTML = `<div class="muted">输入关键词开始搜索</div>`;
+				$results.innerHTML = `
+					<div class="panel empty">
+						<div class="empty-title">开始搜索</div>
+						<div class="muted empty-sub">输入标题、正文关键词或分类名称。</div>
+					</div>
+				`;
 				return;
 			}
 			if (!rows.length) {
-				$results.innerHTML = `<div class="muted">未找到匹配结果</div>`;
+				$results.innerHTML = `
+					<div class="panel empty">
+						<div class="empty-title">未找到结果</div>
+						<div class="muted empty-sub">换个关键词试试，或减少关键词数量。</div>
+					</div>
+				`;
 				return;
 			}
 			$results.innerHTML = rows
 				.map((r) => {
 					const item = 'item' in r ? r.item : r;
 					const url = `${base}posts/${item.slug}/`;
-					const metaParts = [];
-					if (item.pubDate) metaParts.push(new Date(item.pubDate).toLocaleDateString('zh-CN'));
-					if (item.categories?.length) metaParts.push(item.categories.join(' / '));
-					const meta = metaParts.join(' · ');
+					const dateText = item.pubDate ? new Date(item.pubDate).toLocaleDateString('zh-CN') : '';
+					const categories = (item.categories?.length ? item.categories : ['未分类']).map((c) =>
+						String(c).trim()
+					);
+					const primary = categories[0] ?? '未分类';
+					const primaryHref = `${base}categories/${encodeURIComponent(primary)}/`;
+					const tags = categories
+						.slice(0, 12)
+						.map((c) => {
+							const href = `${base}categories/${encodeURIComponent(c)}/`;
+							return `<a class="badge" href="${href}">${escapeHtml(c)}</a>`;
+						})
+						.join('');
 					return `
-						<article class="panel card">
-							<a class="card-title" href="${url}">${item.title}</a>
-							<div class="muted card-meta">${meta}</div>
-							${item.description ? `<p class="muted card-desc">${item.description}</p>` : ''}
+						<article class="post-card panel">
+							<div class="meta">
+								<a class="post-title" href="${url}">${escapeHtml(item.title)}</a>
+								<div class="post-sub muted">
+									${dateText ? `<time datetime="${escapeHtml(item.pubDate)}">${dateText}</time>` : ''}
+									<span class="dot" aria-hidden="true">·</span>
+									<a class="cat" href="${primaryHref}">${escapeHtml(primary)}</a>
+								</div>
+							</div>
+							${item.description ? `<p class="desc muted">${escapeHtml(item.description)}</p>` : ''}
+							${tags ? `<div class="tags">${tags}</div>` : ''}
 						</article>
 					`;
 				})
@@ -106,7 +141,7 @@ import Layout from '../layouts/Layout.astro';
 		gap: 10px;
 	}
 
-	.title {
+	.search-title {
 		font-size: 24px;
 		font-weight: 850;
 	}
@@ -143,28 +178,79 @@ import Layout from '../layouts/Layout.astro';
 		gap: 12px;
 	}
 
-	.card {
-		padding: 16px;
+	.empty {
+		padding: 18px;
 		display: grid;
-		gap: 8px;
+		gap: 6px;
 	}
 
-	.card-title {
+	.empty-title {
+		font-weight: 850;
+	}
+
+	.empty-sub {
+		font-size: 13px;
+	}
+
+	:global(.search-results .post-card) {
+		padding: 16px;
+		display: grid;
+		gap: 10px;
+	}
+
+	:global(.search-results .post-title) {
+		display: inline-block;
 		font-size: 18px;
-		font-weight: 750;
+		font-weight: 700;
+		letter-spacing: 0.2px;
 		text-decoration: none;
 	}
 
-	.card-title:hover {
+	:global(.search-results .post-title:hover) {
 		text-decoration: underline;
 		text-decoration-color: color-mix(in oklab, var(--accent), transparent 55%);
 	}
 
-	.card-meta {
+	:global(.search-results .post-sub) {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
 		font-size: 13px;
 	}
 
-	.card-desc {
+	:global(.search-results .dot) {
+		opacity: 0.6;
+	}
+
+	:global(.search-results .cat) {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	:global(.search-results .cat:hover) {
+		text-decoration: underline;
+	}
+
+	:global(.search-results .desc) {
 		margin: 0;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	:global(.search-results .tags) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	@media (min-width: 980px) {
+		.results {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.empty {
+			grid-column: 1 / -1;
+		}
 	}
 </style>

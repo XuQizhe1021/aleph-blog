@@ -17,9 +17,28 @@ import { withBase } from '../utils/paths';
 			))}
 		</nav>
 		<div class="actions">
+			<button class="btn menu" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-drawer">
+				<span class="muted">菜单</span>
+			</button>
 			<button class="btn" id="theme-toggle" type="button">
 				<span class="muted" id="theme-label">主题</span>
 			</button>
+		</div>
+	</div>
+	<div class="drawer" id="nav-drawer" aria-hidden="true">
+		<div class="drawer-backdrop" id="nav-backdrop"></div>
+		<div class="drawer-panel panel">
+			<div class="drawer-head">
+				<div class="drawer-title">导航</div>
+				<button class="btn" id="nav-close" type="button">关闭</button>
+			</div>
+			<nav class="drawer-links" aria-label="移动端导航">
+				{siteConfig.nav.map((item) => (
+					<a class="drawer-link" href={withBase(item.href)}>
+						{item.label}
+					</a>
+				))}
+			</nav>
 		</div>
 	</div>
 	<script is:inline>
@@ -35,6 +54,29 @@ import { withBase } from '../utils/paths';
 			};
 			set(get());
 			btn?.addEventListener('click', () => set(get() === 'dark' ? 'light' : 'dark'));
+		})();
+	</script>
+	<script is:inline>
+		(() => {
+			const root = document.documentElement;
+			const openBtn = document.getElementById('nav-toggle');
+			const closeBtn = document.getElementById('nav-close');
+			const backdrop = document.getElementById('nav-backdrop');
+			const drawer = document.getElementById('nav-drawer');
+
+			const setOpen = (open) => {
+				root.dataset.navOpen = open ? '1' : '';
+				if (drawer) drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+				if (openBtn) openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+			};
+
+			openBtn?.addEventListener('click', () => setOpen(root.dataset.navOpen !== '1'));
+			closeBtn?.addEventListener('click', () => setOpen(false));
+			backdrop?.addEventListener('click', () => setOpen(false));
+			window.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') setOpen(false);
+			});
+			drawer?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
 		})();
 	</script>
 </header>
@@ -105,6 +147,68 @@ import { withBase } from '../utils/paths';
 		align-items: center;
 		gap: 8px;
 	}
+
+	.menu {
+		display: none;
+	}
+
+	.drawer {
+		display: none;
+	}
+
+	.drawer-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.45);
+		backdrop-filter: blur(6px);
+		z-index: 140;
+	}
+
+	.drawer-panel {
+		position: fixed;
+		top: 74px;
+		left: 16px;
+		right: 16px;
+		z-index: 150;
+		padding: 14px;
+		display: grid;
+		gap: 12px;
+	}
+
+	.drawer-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.drawer-title {
+		font-weight: 800;
+	}
+
+	.drawer-links {
+		display: grid;
+		gap: 8px;
+	}
+
+	.drawer-link {
+		padding: 12px 12px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 18%);
+		color: var(--text);
+		text-decoration: none;
+	}
+
+	.drawer-link:hover {
+		text-decoration: none;
+		border-color: color-mix(in oklab, var(--accent), var(--border) 35%);
+	}
+
+	html[data-nav-open='1'] .drawer {
+		display: block;
+	}
+
 	@media (max-width: 720px) {
 		.inner {
 			height: auto;
@@ -112,15 +216,10 @@ import { withBase } from '../utils/paths';
 			align-items: start;
 		}
 		.nav {
-			width: 100%;
-			justify-content: flex-start;
-			overflow-x: auto;
-			flex-wrap: nowrap;
-			-webkit-overflow-scrolling: touch;
-			scrollbar-width: none;
-		}
-		.nav::-webkit-scrollbar {
 			display: none;
+		}
+		.menu {
+			display: inline-flex;
 		}
 	}
 </style>

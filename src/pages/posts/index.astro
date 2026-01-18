@@ -10,8 +10,15 @@ const categories = getAllCategories(posts);
 
 <Layout title="文章">
 	<section class="head panel">
-		<div class="title">文章</div>
-		<div class="muted">共 {posts.length} 篇</div>
+		<div class="head-left">
+			<div class="title">文章</div>
+			<div class="muted">共 {posts.length} 篇</div>
+		</div>
+		<div class="pager" id="pager" hidden>
+			<button class="btn" id="prev" type="button">上一页</button>
+			<div class="muted" id="page-info"></div>
+			<button class="btn" id="next" type="button">下一页</button>
+		</div>
 	</section>
 
 	<section class="filters panel">
@@ -26,17 +33,71 @@ const categories = getAllCategories(posts);
 		</div>
 	</section>
 
-	<section class="list">
+	<section class="list" id="paged-list">
 		{posts.length ? posts.map((post) => <PostCard post={post} />) : <div class="muted">暂无文章</div>}
 	</section>
+
+	<script is:inline>
+		(() => {
+			const list = document.getElementById('paged-list');
+			const pager = document.getElementById('pager');
+			const prev = document.getElementById('prev');
+			const next = document.getElementById('next');
+			const info = document.getElementById('page-info');
+			if (!list || !pager || !prev || !next || !info) return;
+
+			const items = Array.from(list.children).filter((el) => el instanceof HTMLElement);
+			if (items.length <= 1) return;
+
+			let pageSize = 10;
+			let page = 0;
+			let pageCount = 1;
+
+			const computePageSize = () => (matchMedia('(max-width: 720px)').matches ? 6 : 10);
+
+			const apply = () => {
+				pageSize = computePageSize();
+				pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+				page = Math.min(page, pageCount - 1);
+				const start = page * pageSize;
+				const end = start + pageSize;
+				items.forEach((el, i) => (el.style.display = i >= start && i < end ? '' : 'none'));
+				info.textContent = `${page + 1} / ${pageCount}`;
+				prev.disabled = page <= 0;
+				next.disabled = page >= pageCount - 1;
+				pager.hidden = pageCount <= 1;
+			};
+
+			prev.addEventListener('click', () => {
+				page = Math.max(0, page - 1);
+				apply();
+			});
+			next.addEventListener('click', () => {
+				page = Math.min(pageCount - 1, page + 1);
+				apply();
+			});
+
+			let t = 0;
+			window.addEventListener('resize', () => {
+				window.clearTimeout(t);
+				t = window.setTimeout(() => apply(), 120);
+			});
+
+			apply();
+		})();
+	</script>
 </Layout>
 
 <style>
 	.head {
 		padding: 18px;
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 12px;
+		align-items: center;
+		position: sticky;
+		top: 72px;
+		z-index: 80;
 		gap: 10px;
 	}
 
@@ -44,13 +105,16 @@ const categories = getAllCategories(posts);
 		font-size: 24px;
 		font-weight: 800;
 	}
+	.head-left {
+		display: grid;
+		gap: 6px;
+	}
+
 
 	.filters {
-		margin-top: 14px;
 		padding: 14px;
 		display: grid;
 		gap: 10px;
-	}
 
 	.chips {
 		display: flex;
@@ -80,5 +144,22 @@ const categories = getAllCategories(posts);
 		margin-top: 14px;
 		display: grid;
 		gap: 12px;
+	}
+
+	.pager {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	@media (max-width: 720px) {
+		.head {
+			grid-template-columns: 1fr;
+			align-items: start;
+		}
+		.pager {
+			width: 100%;
+		}
 	}
 </style>

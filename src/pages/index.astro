@@ -6,8 +6,11 @@ import { withBase } from '../utils/paths';
 
 const posts = await getPublicPosts();
 const allCategories = getAllCategories(posts);
-const categories = allCategories.slice(0, 8);
-const latest = posts.slice(0, 8);
+const categories = allCategories
+	.slice()
+	.sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, 'en', { sensitivity: 'base' }))
+	.slice(0, 4);
+const latest = posts.slice(0, 6);
 
 const totalPosts = posts.length;
 const totalCategories = allCategories.length;

@@ -49,6 +49,10 @@ const primaryCategory = getPrimaryCategory(post);
 			) : null}
 		</header>
 
+		<div class="toc-mobile">
+			<Toc headings={headings} variant="drawer" />
+		</div>
+
 		<div class="article-body">
 			<div class="content panel">
 				<div class="prose">
@@ -56,7 +60,7 @@ const primaryCategory = getPrimaryCategory(post);
 				</div>
 			</div>
 			<div class="side">
-				<Toc headings={headings} />
+				<Toc headings={headings} variant="sidebar" />
 			</div>
 		</div>
 	</article>
@@ -117,6 +121,10 @@ const primaryCategory = getPrimaryCategory(post);
 		padding: 18px;
 	}
 
+	.toc-mobile {
+		display: none;
+	}
+
 	.side {
 		display: grid;
 		gap: 14px;
@@ -124,8 +132,14 @@ const primaryCategory = getPrimaryCategory(post);
 	}
 
 	@media (max-width: 980px) {
+		.toc-mobile {
+			display: block;
+		}
 		.article-body {
 			grid-template-columns: 1fr;
+		}
+		.side {
+			display: none;
 		}
 	}
 

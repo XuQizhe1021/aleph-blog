@@ -132,8 +132,18 @@ const primaryCategory = getPrimaryCategory(post);
 	}
 
 	@media (max-width: 980px) {
+		.article {
+			display: block;
+		}
+		.article-head {
+			margin-bottom: 14px;
+		}
 		.toc-mobile {
 			display: block;
+			position: sticky;
+			top: var(--site-header-height, 72px);
+			z-index: 90;
+			margin-bottom: 14px;
 		}
 		.article-body {
 			grid-template-columns: 1fr;

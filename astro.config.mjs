@@ -10,10 +10,16 @@ const [repoOwner, repoName] = process.env.GITHUB_REPOSITORY?.split('/') ?? [];
 const isUserPagesRepo = Boolean(repoName && /\.github\.io$/i.test(repoName));
 const base =
 	process.env.ASTRO_BASE ??
-	(process.env.NODE_ENV === 'production' && repoName && !isUserPagesRepo ? `/${repoName}` : '');
-const site =
-	process.env.SITE_URL ??
-	(process.env.NODE_ENV === 'production' && repoOwner ? `https://${repoOwner}.github.io` : 'http://localhost:4321');
+	(repoName && !isUserPagesRepo ? `/${repoName}` : '');
+
+let site = 'http://localhost:4321';
+if (process.env.SITE_URL) {
+	try {
+		site = new URL(process.env.SITE_URL).origin;
+	} catch {}
+} else if (repoOwner) {
+	site = `https://${repoOwner}.github.io`;
+}
 
 export default defineConfig({
 	site,

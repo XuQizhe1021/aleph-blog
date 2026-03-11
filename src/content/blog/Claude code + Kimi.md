@@ -1,6 +1,6 @@
 ---
 title: 使用Claude Code调用Kimi
-pubDate: '2026-03-11T03:04:59.707Z'
+pubDate: '2026-03-11T03:06:54.152Z'
 draft: false
 categories:
   - 技术

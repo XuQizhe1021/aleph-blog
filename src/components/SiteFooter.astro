@@ -27,31 +27,6 @@ const texts = settings.site_texts;
 
 <script is:inline define:vars={{ settings }}>
 	(() => {
-		const syncFooterHeight = () => {
-			const footer = document.querySelector('.site-footer');
-			if (!(footer instanceof HTMLElement)) return;
-			// 固定底栏高度可能因换行变化，实时写入变量避免正文被遮挡。
-			document.documentElement.style.setProperty('--site-footer-height', `${footer.offsetHeight}px`);
-		};
-		const bindFooterHeight = () => {
-			const footer = document.querySelector('.site-footer');
-			if (!(footer instanceof HTMLElement)) return;
-			syncFooterHeight();
-			if ('ResizeObserver' in window) {
-				if (!window.__SITE_FOOTER_RESIZE_OBSERVER__) {
-					window.__SITE_FOOTER_RESIZE_OBSERVER__ = new ResizeObserver(() => syncFooterHeight());
-				}
-				window.__SITE_FOOTER_RESIZE_OBSERVER__.disconnect();
-				window.__SITE_FOOTER_RESIZE_OBSERVER__.observe(footer);
-			}
-		};
-
-		if (!window.__SITE_FOOTER_HEIGHT_BINDED__) {
-			window.__SITE_FOOTER_HEIGHT_BINDED__ = true;
-			document.addEventListener('astro:page-load', bindFooterHeight);
-			window.addEventListener('resize', bindFooterHeight);
-		}
-
 		if (settings?.site_features?.visual?.dynamicFooterGreeting) {
 			const text = settings.site_texts || {};
 			const greetingByTime = (date) => {
@@ -122,30 +97,14 @@ const texts = settings.site_texts;
 		}
 
 		syncMounts();
-		bindFooterHeight();
 	})();
 </script>
 
 <style>
-	:global(.app-main) {
-		/* 按真实底栏高度预留滚动空间，并额外留白，保证正文与底栏有间隔。 */
-		padding-bottom: calc(var(--site-footer-height, 48px) + 26px);
-	}
-
-	:global(html),
-	:global(body) {
-		scroll-padding-bottom: calc(var(--site-footer-height, 48px) + 26px);
-	}
-
 	.site-footer {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
 		border-top: 1px solid var(--border);
 		background: color-mix(in oklab, var(--panel-strong), transparent 30%);
 		backdrop-filter: blur(16px);
-		z-index: 98;
 	}
 
 	.inner {

@@ -32,20 +32,43 @@ else if (hour < t.greetingEveningEndHour) greeting = texts.greetingEvening;
 <script is:inline define:vars={{ settings }}>
 	(() => {
 		if (!settings?.site_features?.tools?.siteUptime) return;
-		const mount = document.querySelector('[data-site-uptime]');
-		if (!(mount instanceof HTMLElement)) return;
 		const start = new Date(settings.site_theme_tweaks.uptimeStartAt).getTime();
 		if (!Number.isFinite(start)) return;
-		const tick = () => {
+
+		const formatText = () => {
 			const diff = Math.max(0, Date.now() - start);
 			const totalSec = Math.floor(diff / 1000);
 			const day = Math.floor(totalSec / 86400);
 			const hour = Math.floor((totalSec % 86400) / 3600);
 			const min = Math.floor((totalSec % 3600) / 60);
-			mount.textContent = `运行 ${day}天 ${hour}小时 ${min}分钟`;
+			return `运行 ${day}天 ${hour}小时 ${min}分钟`;
 		};
-		tick();
-		window.setInterval(tick, 10000);
+
+		const syncMounts = () => {
+			const text = formatText();
+			document.querySelectorAll('[data-site-uptime]').forEach((el) => {
+				el.textContent = text;
+			});
+		};
+
+		if (!window.__SITE_UPTIME__) {
+			window.__SITE_UPTIME__ = {
+				start,
+				timer: null,
+			};
+		}
+
+		if (!window.__SITE_UPTIME_BINDED__) {
+			window.__SITE_UPTIME_BINDED__ = true;
+			// 切页后页脚节点会替换，这里每次 page-load 都重新同步到新节点。
+			document.addEventListener('astro:page-load', syncMounts);
+		}
+
+		if (!window.__SITE_UPTIME__.timer) {
+			window.__SITE_UPTIME__.timer = window.setInterval(syncMounts, 10000);
+		}
+
+		syncMounts();
 	})();
 </script>
 

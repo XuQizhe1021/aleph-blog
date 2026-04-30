@@ -27,6 +27,19 @@ const texts = settings.site_texts;
 
 <script is:inline define:vars={{ settings }}>
 	(() => {
+		const syncFooterHeight = () => {
+			const footer = document.querySelector('.site-footer');
+			if (!(footer instanceof HTMLElement)) return;
+			// 固定底栏高度可能因换行变化，实时写入变量避免正文被遮挡。
+			document.documentElement.style.setProperty('--site-footer-height', `${footer.offsetHeight}px`);
+		};
+
+		if (!window.__SITE_FOOTER_HEIGHT_BINDED__) {
+			window.__SITE_FOOTER_HEIGHT_BINDED__ = true;
+			document.addEventListener('astro:page-load', syncFooterHeight);
+			window.addEventListener('resize', syncFooterHeight);
+		}
+
 		if (settings?.site_features?.visual?.dynamicFooterGreeting) {
 			const text = settings.site_texts || {};
 			const greetingByTime = (date) => {
@@ -97,13 +110,14 @@ const texts = settings.site_texts;
 		}
 
 		syncMounts();
+		syncFooterHeight();
 	})();
 </script>
 
 <style>
 	:global(.app-main) {
-		/* 固定底栏后给正文预留空间，避免最后一屏内容被遮挡。 */
-		padding-bottom: 94px;
+		/* 按真实底栏高度预留滚动空间，保证列表可完整滑出底栏区域。 */
+		padding-bottom: calc(var(--site-footer-height, 48px) + 14px);
 	}
 
 	.site-footer {
@@ -120,12 +134,12 @@ const texts = settings.site_texts;
 	.inner {
 		width: min(1140px, calc(100% - 32px));
 		margin: 0 auto;
-		min-height: 58px;
+		min-height: 44px;
 		display: flex;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 10px;
-		padding: 10px 0;
+		gap: 8px;
+		padding: 6px 0;
 	}
 
 	.random-link {

@@ -1,6 +1,10 @@
 ---
 import { siteConfig } from '../site.config';
 import { withBase } from '../utils/paths';
+
+const normalizedPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const normalizedHomePath = withBase('/').replace(/\/+$/, '') || '/';
+const isHome = normalizedPath === normalizedHomePath;
 ---
 
 <header class="site-header">
@@ -20,6 +24,13 @@ import { withBase } from '../utils/paths';
 			<button class="btn menu" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-drawer">
 				<span class="muted">菜单</span>
 			</button>
+			{
+				isHome ? (
+					<button class="btn" id="start-overlay-toggle-home" type="button" hidden>
+						<span class="muted">拉下启动图</span>
+					</button>
+				) : null
+			}
 			<button class="btn" id="theme-toggle" type="button">
 				<span class="muted" id="theme-label">主题</span>
 			</button>
@@ -47,6 +58,28 @@ import { withBase } from '../utils/paths';
 			};
 			set(get());
 			btn?.addEventListener('click', () => set(get() === 'dark' ? 'light' : 'dark'));
+		})();
+	</script>
+	<script is:inline>
+		(() => {
+			const pullDownBtn = document.getElementById('start-overlay-toggle-home');
+			if (!(pullDownBtn instanceof HTMLButtonElement)) return;
+			const setVisible = (visible) => {
+				pullDownBtn.hidden = !visible;
+				pullDownBtn.setAttribute('aria-hidden', visible ? 'false' : 'true');
+			};
+			setVisible(false);
+			pullDownBtn.addEventListener('click', () => {
+				window.dispatchEvent(
+					new CustomEvent('start-overlay:toggle', {
+						detail: { open: true },
+					})
+				);
+			});
+			window.addEventListener('start-overlay:state', (e) => {
+				const collapsed = Boolean(e?.detail?.collapsed);
+				setVisible(collapsed);
+			});
 		})();
 	</script>
 	<script is:inline>

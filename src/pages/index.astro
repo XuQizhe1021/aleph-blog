@@ -1,8 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import PostCard from '../components/PostCard.astro';
+import HomeStartOverlay from '../components/HomeStartOverlay.astro';
 import { getPublicPosts, getAllCategories } from '../utils/blog';
 import { withBase } from '../utils/paths';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const posts = await getPublicPosts();
 const allCategories = getAllCategories(posts);
@@ -21,9 +25,24 @@ const latestUpdateTs = posts.reduce((max, post) => {
 const latestUpdateText = latestUpdateTs
 	? new Date(latestUpdateTs).toLocaleDateString('zh-CN')
 	: '—';
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const startDir = path.join(projectRoot, 'public', 'start');
+
+let startImages: string[] = [];
+try {
+	const files = await fs.readdir(startDir);
+	startImages = files
+		.filter((name) => /\.(png|jpe?g|webp|gif|avif)$/i.test(name))
+		.sort((a, b) => a.localeCompare(b, 'zh-CN'))
+		.map((name) => `/start/${encodeURIComponent(name)}`);
+} catch {
+	startImages = [];
+}
 ---
 
 <Layout title="首页">
+	{startImages.length ? <HomeStartOverlay images={startImages} /> : null}
 	<section class="hero panel">
 		<div class="hero-head">
 			<div class="hero-title">站点概览</div>

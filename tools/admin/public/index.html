@@ -17,6 +17,10 @@
 						<input id="upload-md" type="file" accept=".md,.mdx" hidden />
 					</label>
 					<label class="btn">
+						上传首页启动图
+						<input id="upload-start" type="file" accept="image/*" hidden />
+					</label>
+					<label class="btn">
 						上传打赏图
 						<input id="upload-reward" type="file" accept="image/*" hidden />
 					</label>
@@ -68,6 +72,15 @@
 								<div class="prose" id="preview"></div>
 							</div>
 						</div>
+					</div>
+					<div class="panel start-manager">
+						<div class="viewer-head">
+							<div class="viewer-title">首页启动层管理</div>
+						</div>
+						<div class="hint">
+							管理博客首页全屏启动图片。进入站点时会随机首图，支持左右轮换与上滑收起。
+						</div>
+						<div class="start-list" id="start-list"></div>
 					</div>
 				</section>
 			</div>

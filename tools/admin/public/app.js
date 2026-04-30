@@ -4,7 +4,6 @@ const $list = $('list');
 const $filter = $('filter');
 const $count = $('count');
 const $uploadMd = $('upload-md');
-const $uploadStart = $('upload-start');
 const $uploadReward = $('upload-reward');
 const $refresh = $('refresh');
 const $manageCategories = $('manage-categories');
@@ -23,7 +22,6 @@ const $modalClose = $('modal-close');
 const $modalTitle = $('modal-title');
 const $modalBody = $('modal-body');
 const $modalActions = $('modal-actions');
-const $startList = $('start-list');
 const $settingsMeta = $('settings-meta');
 const $settingsPreview = $('settings-preview');
 const $settingsSave = $('settings-save');
@@ -39,8 +37,6 @@ let activeSlug = '';
 let categories = [];
 let pendingUploadFile = null;
 let pendingRewardFile = null;
-let pendingStartFile = null;
-let startImages = [];
 let settingsDraft = null;
 let settingsMeta = null;
 let settingsActiveTab = 'features';
@@ -133,7 +129,6 @@ function closeModal() {
 	if ($modalActions) $modalActions.innerHTML = '';
 	pendingUploadFile = null;
 	pendingRewardFile = null;
-	pendingStartFile = null;
 }
 
 function safeBasename(fileName) {
@@ -215,30 +210,6 @@ async function loadPosts() {
 		categories = [];
 	}
 	renderList();
-}
-
-function renderStartAssets() {
-	if (!$startList) return;
-	if (!startImages.length) {
-		$startList.innerHTML = '<div class="muted">暂无启动图，请先上传。</div>';
-		return;
-	}
-	$startList.innerHTML = startImages
-		.map(
-			(item) => `
-				<div class="panel start-item" data-name="${item.name}">
-					<img class="start-thumb" src="${item.path}" alt="${item.name}" loading="lazy" />
-					<div class="start-meta">
-						<div class="start-name">${item.name}</div>
-						<div class="muted start-sub">${new Date(item.updatedAt).toLocaleString('zh-CN')}</div>
-					</div>
-					<div class="start-actions">
-						<button class="btn danger" data-action="delete-start" type="button">删除</button>
-					</div>
-				</div>
-			`
-		)
-		.join('');
 }
 
 function updateSettingsMeta() {
@@ -511,14 +482,6 @@ async function publishSiteSettings() {
 	renderSettingsAll();
 }
 
-async function loadStartAssets() {
-	const resp = await fetch(baseUrl('/api/start-assets'));
-	const data = await resp.json();
-	if (!resp.ok) throw new Error(data.error || 'load_start_assets_failed');
-	startImages = Array.isArray(data.images) ? data.images : [];
-	renderStartAssets();
-}
-
 async function loadPost(slug) {
 	activeSlug = slug;
 	renderList();
@@ -596,24 +559,6 @@ async function uploadReward(file) {
 	return data;
 }
 
-async function uploadStart(file) {
-	const form = new FormData();
-	form.append('file', file);
-	const resp = await fetch(baseUrl('/api/start-assets/upload'), { method: 'POST', body: form });
-	const data = await resp.json();
-	if (!resp.ok) throw new Error(data.error || 'upload_failed');
-	return data;
-}
-
-async function deleteStart(name) {
-	const resp = await fetch(baseUrl(`/api/start-assets/${encodeURIComponent(name)}`), {
-		method: 'DELETE',
-	});
-	const data = await resp.json();
-	if (!resp.ok) throw new Error(data.error || 'delete_failed');
-	return data;
-}
-
 $list?.addEventListener('click', (e) => {
 	const el = e.target?.closest?.('[data-slug]');
 	const slug = el?.getAttribute?.('data-slug');
@@ -624,7 +569,6 @@ $list?.addEventListener('click', (e) => {
 $filter?.addEventListener('input', () => renderList());
 
 $refresh?.addEventListener('click', () => loadPosts());
-$refresh?.addEventListener('click', () => loadStartAssets());
 
 $editCategories?.addEventListener('keydown', (e) => {
 	if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $saveCategories?.click();
@@ -746,53 +690,6 @@ $uploadReward?.addEventListener('change', async (e) => {
 	}
 });
 
-$uploadStart?.addEventListener('change', async (e) => {
-	const file = e.target.files?.[0];
-	if (!file) return;
-	try {
-		showStartUploadModal(file);
-	} finally {
-		e.target.value = '';
-	}
-});
-
-function showStartUploadModal(file) {
-	pendingStartFile = file;
-	openModal({
-		title: '上传首页启动图',
-		bodyHtml: `
-			<div class="row">
-				<div class="label">文件</div>
-				<div class="muted">${file.name}</div>
-				<div class="hint">上传后会加入首页启动图池，进入站点时会随机首图展示。</div>
-			</div>
-			<div class="row">
-				<label class="inline muted">
-					<input type="checkbox" id="start-autopublish" checked />
-					上传后自动发布到 GitHub（会执行 git commit + git push）
-				</label>
-			</div>
-		`,
-		actionsHtml: `
-			<button class="btn" id="start-cancel" type="button">取消</button>
-			<button class="btn" id="start-confirm" type="button">确认上传</button>
-		`,
-	});
-	$('start-cancel')?.addEventListener('click', () => closeModal());
-	$('start-confirm')?.addEventListener('click', async () => {
-		if (!pendingStartFile) return;
-		try {
-			const autoPublish = $('start-autopublish')?.checked ?? false;
-			await uploadStart(pendingStartFile);
-			closeModal();
-			await loadStartAssets();
-			if (autoPublish) await publishSite();
-		} catch (e2) {
-			alert(String(e2?.message || e2));
-		}
-	});
-}
-
 function showRewardUploadModal(file) {
 	pendingRewardFile = file;
 	openModal({
@@ -828,22 +725,6 @@ function showRewardUploadModal(file) {
 		}
 	});
 }
-
-$startList?.addEventListener('click', async (ev) => {
-	const btn = ev.target?.closest?.('button[data-action="delete-start"]');
-	if (!btn) return;
-	const row = btn.closest?.('[data-name]');
-	const name = row?.getAttribute?.('data-name') ?? '';
-	if (!name) return;
-	const ok = confirm(`确认删除启动图：${name} ？`);
-	if (!ok) return;
-	try {
-		await deleteStart(name);
-		await loadStartAssets();
-	} catch (e2) {
-		alert(String(e2?.message || e2));
-	}
-});
 
 document.querySelectorAll('.settings-tab').forEach((btn) => {
 	btn.addEventListener('click', () => {
@@ -1051,5 +932,5 @@ $manageCategories?.addEventListener('click', async () => {
 	});
 });
 
-await Promise.all([loadPosts(), loadStartAssets(), loadSiteSettings()]);
+await Promise.all([loadPosts(), loadSiteSettings()]);
 showAdminPage(adminPage);

@@ -11,7 +11,6 @@ const settings = await getSiteSettings();
 			<button class="btn sidebar-launcher" type="button" data-sidebar-launcher>
 				{settings.site_texts.sidebarTitle}
 			</button>
-			<div class="sidebar-mask" data-sidebar-mask aria-hidden="true"></div>
 			<aside
 				class="site-sidebar panel"
 				data-sidebar
@@ -49,14 +48,9 @@ const settings = await getSiteSettings();
 	(() => {
 		const syncSidebarState = (open) => {
 			const drawer = document.querySelector('[data-sidebar]');
-			const mask = document.querySelector('[data-sidebar-mask]');
 			if (drawer instanceof HTMLElement) {
 				drawer.dataset.open = open ? '1' : '0';
 				drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
-			}
-			if (mask instanceof HTMLElement) {
-				mask.dataset.open = open ? '1' : '0';
-				mask.setAttribute('aria-hidden', open ? 'false' : 'true');
 			}
 		};
 
@@ -68,6 +62,7 @@ const settings = await getSiteSettings();
 		};
 
 		const applyStoredState = () => {
+			const drawer = document.querySelector('[data-sidebar]');
 			let initial = null;
 			try {
 				initial = localStorage.getItem('site_sidebar_open');
@@ -76,8 +71,12 @@ const settings = await getSiteSettings();
 				syncSidebarState(initial === '1');
 				return;
 			}
-			// 兜底：没有存储状态时优先关闭，避免遮罩锁死页面交互。
-			syncSidebarState(false);
+			// 首次无缓存时，沿用服务端初始状态，避免切页闪动“先开后关”。
+			const fromSSR = drawer instanceof HTMLElement ? drawer.dataset.open === '1' : false;
+			syncSidebarState(fromSSR);
+			try {
+				localStorage.setItem('site_sidebar_open', fromSSR ? '1' : '0');
+			} catch {}
 		};
 
 		if (!window.__SITE_SIDEBAR_BINDED__) {
@@ -90,7 +89,7 @@ const settings = await getSiteSettings();
 					setOpen(true);
 					return;
 				}
-				if (target.closest('[data-sidebar-close]') || target.closest('[data-sidebar-mask]')) {
+				if (target.closest('[data-sidebar-close]')) {
 					setOpen(false);
 				}
 			});
@@ -112,31 +111,12 @@ const settings = await getSiteSettings();
 		z-index: 39;
 	}
 
-	.sidebar-mask {
-		position: fixed;
-		top: var(--site-header-height, 62px);
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(0, 0, 0, 0.28);
-		backdrop-filter: blur(2px);
-		z-index: 40;
-		opacity: 0;
-		pointer-events: none;
-		transition: opacity 220ms ease;
-	}
-
-	.sidebar-mask[data-open='1'] {
-		opacity: 1;
-		pointer-events: auto;
-	}
-
 	.site-sidebar {
 		position: fixed;
 		top: var(--site-header-height, 62px);
 		left: 0;
 		height: calc(100dvh - var(--site-header-height, 62px));
-		width: min(360px, calc(100vw - 20px));
+		width: min(220px, calc(100vw - 20px));
 		padding: 12px;
 		border-radius: 0;
 		border-right: 1px solid var(--border);
@@ -203,7 +183,7 @@ const settings = await getSiteSettings();
 			top: calc(var(--site-header-height, 62px) + 10px);
 		}
 		.site-sidebar {
-			width: min(420px, calc(100vw - 10px));
+			width: min(200px, calc(100vw - 10px));
 		}
 	}
 </style>

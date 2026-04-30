@@ -16,17 +16,13 @@ const upload = multer({ storage: multer.memoryStorage() });
 const projectRoot = process.cwd();
 const postsDir = path.join(projectRoot, 'src', 'content', 'blog');
 const publicDir = path.join(projectRoot, 'public');
-const startDir = path.join(publicDir, 'start');
 const adminPublicDir = path.join(projectRoot, 'tools', 'admin', 'public');
 const dataDir = path.join(projectRoot, 'data');
 const settingsPath = path.join(dataDir, 'site-settings.json');
 
 await fs.mkdir(postsDir, { recursive: true });
 await fs.mkdir(publicDir, { recursive: true });
-await fs.mkdir(startDir, { recursive: true });
 await fs.mkdir(dataDir, { recursive: true });
-
-const startImageExts = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif']);
 
 const defaultSiteSettings = {
 	version: 1,
@@ -306,31 +302,6 @@ function decodeMarkdownBuffer(buf) {
 		if (gbk && !gbk.includes('\uFFFD')) return gbk;
 	} catch {}
 	return utf8;
-}
-
-function extFromImageMime(mime) {
-	const m = String(mime || '').toLowerCase();
-	if (m === 'image/png') return '.png';
-	if (m === 'image/jpeg') return '.jpg';
-	if (m === 'image/webp') return '.webp';
-	if (m === 'image/gif') return '.gif';
-	if (m === 'image/avif') return '.avif';
-	return '';
-}
-
-function isStartImageFile(fileName) {
-	return startImageExts.has(path.extname(fileName).toLowerCase());
-}
-
-async function buildUniqueStartName(baseName, ext) {
-	const seed = safeBasename(baseName) || 'start';
-	let name = `${seed}${ext}`;
-	let i = 1;
-	while (fssync.existsSync(path.join(startDir, name))) {
-		name = `${seed}_${i}${ext}`;
-		i += 1;
-	}
-	return name;
 }
 
 async function readTextFile(filePath) {
@@ -951,63 +922,6 @@ app.get('/api/reward-image', async (_req, res) => {
 			.sort((a, b) => a.localeCompare(b));
 		const file = files[0] ?? '';
 		res.json({ path: file ? `/${file}` : '' });
-	} catch (e) {
-		res.status(500).json({ error: String(e) });
-	}
-});
-
-app.get('/api/start-assets', async (_req, res) => {
-	try {
-		const files = await fs.readdir(startDir);
-		const images = (
-			await Promise.all(
-				files
-					.filter((f) => isStartImageFile(f))
-					.map(async (name) => {
-						const full = path.join(startDir, name);
-						const stat = await fs.stat(full);
-						return {
-							name,
-							path: `/start/${encodeURIComponent(name)}`,
-							size: stat.size,
-							updatedAt: stat.mtime.toISOString(),
-						};
-					})
-			)
-		).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
-		res.json({ images });
-	} catch (e) {
-		res.status(500).json({ error: String(e) });
-	}
-});
-
-app.post('/api/start-assets/upload', upload.single('file'), async (req, res) => {
-	try {
-		const file = req.file;
-		if (!file) return res.status(400).json({ error: 'missing_file' });
-		const originalname = decodePossiblyMojibakeName(file.originalname);
-		let ext = path.extname(originalname || '').toLowerCase();
-		if (!startImageExts.has(ext)) ext = extFromImageMime(file.mimetype);
-		if (!startImageExts.has(ext)) return res.status(400).json({ error: 'invalid_image_type' });
-		const fileName = await buildUniqueStartName(path.parse(originalname).name, ext);
-		const target = path.join(startDir, fileName);
-		await fs.writeFile(target, file.buffer);
-		res.json({ ok: true, file: fileName, path: `/start/${encodeURIComponent(fileName)}` });
-	} catch (e) {
-		res.status(500).json({ error: String(e) });
-	}
-});
-
-app.delete('/api/start-assets/:name', async (req, res) => {
-	try {
-		const safeName = path.basename(decodeURIComponent(req.params.name ?? ''));
-		if (!safeName || !isStartImageFile(safeName)) {
-			return res.status(400).json({ error: 'invalid_name' });
-		}
-		const filePath = path.join(startDir, safeName);
-		if (!fssync.existsSync(filePath)) return res.status(404).json({ error: 'not_found' });
-		await fs.unlink(filePath);
-		res.json({ ok: true });
 	} catch (e) {
 		res.status(500).json({ error: String(e) });
 	}

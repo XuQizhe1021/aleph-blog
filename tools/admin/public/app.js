@@ -36,6 +36,7 @@ let pendingRewardFile = null;
 let settingsDraft = null;
 let settingsMeta = null;
 let adminPage = 'posts';
+let settingsActiveGroup = 'features';
 
 const baseUrl = (path) => `${path}`;
 const formatDate = (s) => (s ? new Date(s).toLocaleDateString('zh-CN') : '');
@@ -186,6 +187,7 @@ function showAdminPage(page) {
 
 function setSettingsCardByTree(group, target, tab) {
 	if (!group || !target) return;
+	settingsActiveGroup = group;
 	settingsCardState[group] = target;
 	renderSettingsSingle();
 	document.querySelectorAll('[data-tree-item][data-settings-card]').forEach((btn) => {
@@ -462,8 +464,8 @@ function renderSettingsSingle() {
 		texts: buildSettingsTextsCards(),
 		integrations: buildSettingsIntegrationsCards(),
 	};
-	const groups = ['features', 'texts', 'integrations'];
-	const activeGroup = groups.find((group) => allCards[group].some((card) => card.id === settingsCardState[group])) || 'features';
+	const group = settingsActiveGroup in allCards ? settingsActiveGroup : 'features';
+	const activeGroup = allCards[group].length ? group : 'features';
 	$settingsSingle.innerHTML = renderCardSwitcher(activeGroup, allCards[activeGroup]);
 	const mappingSelect = $settingsSingle.querySelector('select[data-settings-path="site_integrations.giscus.mapping"]');
 	if (mappingSelect) mappingSelect.value = getByPath(settingsDraft, 'site_integrations.giscus.mapping');

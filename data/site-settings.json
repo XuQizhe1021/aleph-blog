@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "savedAt": "2026-04-30T11:41:38.348Z",
-  "publishedAt": "2026-04-30T11:41:38.357Z",
+  "savedAt": "2026-04-30T17:40:09.436Z",
+  "publishedAt": "2026-04-30T17:40:09.442Z",
   "site_features": {
     "visual": {
       "dynamicFooterGreeting": true,
@@ -58,7 +58,7 @@
     "festivalStartDate": "12-24",
     "festivalEndDate": "12-26",
     "festivalDurationMs": 1800,
-    "sidebarDefaultCollapsed": false,
+    "sidebarDefaultCollapsed": true,
     "tocActiveOffset": 96,
     "uptimeStartAt": "2026-01-01T00:00:00+08:00"
   },
@@ -81,7 +81,7 @@
       {
         "id": "github",
         "label": "GitHub",
-        "url": "https://github.com/",
+        "url": "https://github.com/XuQizhe1021",
         "icon": "github",
         "order": 1
       },

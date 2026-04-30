@@ -26,11 +26,7 @@ const $settingsMeta = $('settings-meta');
 const $settingsPreview = $('settings-preview');
 const $settingsSave = $('settings-save');
 const $settingsPublish = $('settings-publish');
-const $settingsFeatures = $('settings-features');
-const $settingsTexts = $('settings-texts');
-const $settingsIntegrations = $('settings-integrations');
-const $adminNav = $('admin-nav');
-const $adminNavToggle = $('admin-nav-toggle');
+const $settingsSingle = $('settings-single');
 
 let posts = [];
 let activeSlug = '';
@@ -39,7 +35,6 @@ let pendingUploadFile = null;
 let pendingRewardFile = null;
 let settingsDraft = null;
 let settingsMeta = null;
-let settingsActiveTab = 'features';
 let adminPage = 'posts';
 
 const baseUrl = (path) => `${path}`;
@@ -73,8 +68,12 @@ const fieldHelpMap = {
 	'site_texts.linksPageIntro': ['链接页简介', '数字名片页说明文字'],
 	'site_theme_tweaks.viewTransitionDurationMs': ['切换动画时长(ms)', '页面过渡动画持续时长'],
 	'site_theme_tweaks.viewTransitionEasing': ['切换动画曲线', '例如 ease / linear / ease-in-out'],
-	'site_theme_tweaks.cursorLight': ['浅色模式鼠标样式', 'CSS cursor 值，如 auto / pointer'],
-	'site_theme_tweaks.cursorDark': ['深色模式鼠标样式', 'CSS cursor 值，如 auto / pointer'],
+	'site_theme_tweaks.cursorNormalLight': ['浅色正常态鼠标', '默认状态使用的 CSS cursor 值'],
+	'site_theme_tweaks.cursorNormalDark': ['深色正常态鼠标', '默认状态使用的 CSS cursor 值'],
+	'site_theme_tweaks.cursorClickLight': ['浅色点击态鼠标', '按钮、链接等交互态使用的 cursor 值'],
+	'site_theme_tweaks.cursorClickDark': ['深色点击态鼠标', '按钮、链接等交互态使用的 cursor 值'],
+	'site_theme_tweaks.cursorLoadingLight': ['浅色加载态鼠标', '页面切换和加载阶段使用的 cursor 值'],
+	'site_theme_tweaks.cursorLoadingDark': ['深色加载态鼠标', '页面切换和加载阶段使用的 cursor 值'],
 	'site_theme_tweaks.greetingMorningEndHour': ['早晨截止小时', '小时范围 1-23'],
 	'site_theme_tweaks.greetingNoonEndHour': ['中午截止小时', '小时范围 1-23'],
 	'site_theme_tweaks.greetingAfternoonEndHour': ['下午截止小时', '小时范围 1-23'],
@@ -187,11 +186,8 @@ function showAdminPage(page) {
 
 function setSettingsCardByTree(group, target, tab) {
 	if (!group || !target) return;
-	if (tab) showSettingsTab(tab);
 	settingsCardState[group] = target;
-	if (group === 'features') renderSettingsFeatures();
-	if (group === 'texts') renderSettingsTexts();
-	if (group === 'integrations') renderSettingsIntegrations();
+	renderSettingsSingle();
 	document.querySelectorAll('[data-tree-item][data-settings-card]').forEach((btn) => {
 		const same = btn.getAttribute('data-settings-group') === group && btn.getAttribute('data-settings-card') === settingsCardState[group];
 		btn.classList.toggle('active', same);
@@ -227,29 +223,14 @@ function renderCardSwitcher(group, cards) {
 	const safeCards = Array.isArray(cards) ? cards : [];
 	const activeId = settingsCardState[group];
 	const active = safeCards.some((item) => item.id === activeId) ? activeId : safeCards[0]?.id;
-	settingsCardState[group] = active;
-	return `
-		<div class="settings-card-switch" data-card-group="${group}">
-			<div class="settings-card-tabs">
-				${safeCards
-					.map(
-						(card) => `<button class="btn settings-card-tab ${active === card.id ? 'active' : ''}" type="button" data-card-toggle data-card-group="${group}" data-card-target="${card.id}">${card.title}</button>`
-					)
-					.join('')}
-			</div>
-			${safeCards
-				.map(
-					(card) => `
-				<section class="settings-card ${active === card.id ? 'active' : ''}" data-card-id="${card.id}" ${active === card.id ? '' : 'hidden'}>
-					<div class="settings-group-title">${card.title}</div>
-					${card.desc ? `<div class="hint">${card.desc}</div>` : ''}
-					${card.body}
-				</section>
-			`
-				)
-				.join('')}
-		</div>
-	`;
+	const currentCard = safeCards.find((item) => item.id === active) || null;
+	settingsCardState[group] = currentCard?.id || '';
+	if (!currentCard) return '<div class="hint">暂无可编辑配置</div>';
+	return `<section class="settings-card active" data-card-id="${currentCard.id}">
+		<div class="settings-group-title">${currentCard.title}</div>
+		${currentCard.desc ? `<div class="hint">${currentCard.desc}</div>` : ''}
+		${currentCard.body}
+	</section>`;
 }
 
 function renderFeatureRows(groupTitle, rows) {
@@ -274,27 +255,24 @@ function renderFeatureRows(groupTitle, rows) {
 	`;
 }
 
-function renderSettingsFeatures() {
-	if (!$settingsFeatures || !settingsDraft || !settingsMeta) return;
+function buildSettingsFeaturesCards() {
+	if (!settingsDraft || !settingsMeta) return [];
 	const groups = ['视觉微调', '内容增强', '实用工具', '社交互动'].map((name) => ({
 		id: `features-${name}`,
 		title: name,
 		desc: `该分组包含 ${name} 相关开关，建议逐项灰度开启。`,
 		rows: settingsMeta.site_features.filter((item) => item.category === name),
 	}));
-	$settingsFeatures.innerHTML = renderCardSwitcher(
-		'features',
-		groups.map((g) => ({
-			id: g.id,
-			title: g.title,
-			desc: g.desc,
-			body: renderFeatureRows(g.title, g.rows),
-		}))
-	);
+	return groups.map((g) => ({
+		id: g.id,
+		title: g.title,
+		desc: g.desc,
+		body: renderFeatureRows(g.title, g.rows),
+	}));
 }
 
-function renderSettingsTexts() {
-	if (!$settingsTexts || !settingsDraft) return;
+function buildSettingsTextsCards() {
+	if (!settingsDraft) return [];
 	const paths = [
 		'site_texts.footerSignature',
 		'site_texts.greetingMorning',
@@ -335,8 +313,12 @@ function renderSettingsTexts() {
 	const tweakPaths = [
 		'site_theme_tweaks.viewTransitionDurationMs',
 		'site_theme_tweaks.viewTransitionEasing',
-		'site_theme_tweaks.cursorLight',
-		'site_theme_tweaks.cursorDark',
+		'site_theme_tweaks.cursorNormalLight',
+		'site_theme_tweaks.cursorNormalDark',
+		'site_theme_tweaks.cursorClickLight',
+		'site_theme_tweaks.cursorClickDark',
+		'site_theme_tweaks.cursorLoadingLight',
+		'site_theme_tweaks.cursorLoadingDark',
 		'site_theme_tweaks.greetingMorningEndHour',
 		'site_theme_tweaks.greetingNoonEndHour',
 		'site_theme_tweaks.greetingAfternoonEndHour',
@@ -357,14 +339,58 @@ function renderSettingsTexts() {
 		.join('');
 	const collapseHelp = getFieldHelp('site_theme_tweaks.sidebarDefaultCollapsed');
 	const collapseBody = `<label class="settings-row"><div class="label">${collapseHelp.label}</div><div class="hint">${collapseHelp.desc}</div><div class="muted settings-key">site_theme_tweaks.sidebarDefaultCollapsed</div><label class="settings-switch"><input type="checkbox" data-settings-path="site_theme_tweaks.sidebarDefaultCollapsed" ${getByPath(settingsDraft, 'site_theme_tweaks.sidebarDefaultCollapsed') ? 'checked' : ''} /><span>启用</span></label></label>`;
-	$settingsTexts.innerHTML = renderCardSwitcher('texts', [
+	const cursorUploaderBody = `
+		<div class="settings-group">
+			<div class="settings-group-title">鼠标皮肤上传</div>
+			<div class="hint">上传后会自动重命名并覆盖到固定路径，可选择上传后直接推送仓库。</div>
+			<div class="table">
+				<div class="table-row">
+					<div class="name">浅色-正常态</div>
+					<div class="muted">normal/light</div>
+					<div class="muted">当前：${String(getByPath(settingsDraft, 'site_theme_tweaks.cursorNormalLight') ?? 'auto')}</div>
+					<div class="inline"><button class="btn" type="button" data-cursor-upload data-cursor-shape="normal" data-cursor-theme="light">上传</button></div>
+				</div>
+				<div class="table-row">
+					<div class="name">浅色-点击态</div>
+					<div class="muted">click/light</div>
+					<div class="muted">当前：${String(getByPath(settingsDraft, 'site_theme_tweaks.cursorClickLight') ?? 'pointer')}</div>
+					<div class="inline"><button class="btn" type="button" data-cursor-upload data-cursor-shape="click" data-cursor-theme="light">上传</button></div>
+				</div>
+				<div class="table-row">
+					<div class="name">浅色-加载态</div>
+					<div class="muted">loading/light</div>
+					<div class="muted">当前：${String(getByPath(settingsDraft, 'site_theme_tweaks.cursorLoadingLight') ?? 'progress')}</div>
+					<div class="inline"><button class="btn" type="button" data-cursor-upload data-cursor-shape="loading" data-cursor-theme="light">上传</button></div>
+				</div>
+				<div class="table-row">
+					<div class="name">深色-正常态</div>
+					<div class="muted">normal/dark</div>
+					<div class="muted">当前：${String(getByPath(settingsDraft, 'site_theme_tweaks.cursorNormalDark') ?? 'auto')}</div>
+					<div class="inline"><button class="btn" type="button" data-cursor-upload data-cursor-shape="normal" data-cursor-theme="dark">上传</button></div>
+				</div>
+				<div class="table-row">
+					<div class="name">深色-点击态</div>
+					<div class="muted">click/dark</div>
+					<div class="muted">当前：${String(getByPath(settingsDraft, 'site_theme_tweaks.cursorClickDark') ?? 'pointer')}</div>
+					<div class="inline"><button class="btn" type="button" data-cursor-upload data-cursor-shape="click" data-cursor-theme="dark">上传</button></div>
+				</div>
+				<div class="table-row">
+					<div class="name">深色-加载态</div>
+					<div class="muted">loading/dark</div>
+					<div class="muted">当前：${String(getByPath(settingsDraft, 'site_theme_tweaks.cursorLoadingDark') ?? 'progress')}</div>
+					<div class="inline"><button class="btn" type="button" data-cursor-upload data-cursor-shape="loading" data-cursor-theme="dark">上传</button></div>
+				</div>
+			</div>
+		</div>
+	`;
+	return [
 		{ id: 'texts-文案配置', title: '文案配置', desc: '用于页面文案与提示信息配置。', body: `<div class="settings-group">${textBody}</div>` },
-		{ id: 'texts-视觉参数', title: '视觉参数', desc: '用于动画、光标、时段边界等参数配置。', body: `<div class="settings-group">${tweakBody}${collapseBody}</div>` },
-	]);
+		{ id: 'texts-视觉参数', title: '视觉参数', desc: '用于动画、光标、时段边界等参数配置。', body: `<div class="settings-group">${tweakBody}${collapseBody}</div>${cursorUploaderBody}` },
+	];
 }
 
-function renderSettingsIntegrations() {
-	if (!$settingsIntegrations || !settingsDraft) return;
+function buildSettingsIntegrationsCards() {
+	if (!settingsDraft) return [];
 	const giscusFields = [
 		'site_integrations.giscus.repo',
 		'site_integrations.giscus.repoId',
@@ -410,9 +436,7 @@ function renderSettingsIntegrations() {
 			</div>`,
 		});
 	});
-	$settingsIntegrations.innerHTML = renderCardSwitcher('integrations', cards);
-	const mappingSelect = $settingsIntegrations.querySelector('select[data-settings-path="site_integrations.giscus.mapping"]');
-	if (mappingSelect) mappingSelect.value = getByPath(settingsDraft, 'site_integrations.giscus.mapping');
+	return cards;
 }
 
 function syncInputToDraft(target) {
@@ -431,22 +455,23 @@ function syncInputToDraft(target) {
 	}
 }
 
-function showSettingsTab(tab) {
-	settingsActiveTab = tab;
-	document.querySelectorAll('.settings-tab').forEach((el) => {
-		el.classList.toggle('active', el.getAttribute('data-settings-tab') === tab);
-	});
-	$settingsFeatures && ($settingsFeatures.hidden = tab !== 'features');
-	$settingsTexts && ($settingsTexts.hidden = tab !== 'texts');
-	$settingsIntegrations && ($settingsIntegrations.hidden = tab !== 'integrations');
+function renderSettingsSingle() {
+	if (!$settingsSingle || !settingsDraft) return;
+	const allCards = {
+		features: buildSettingsFeaturesCards(),
+		texts: buildSettingsTextsCards(),
+		integrations: buildSettingsIntegrationsCards(),
+	};
+	const groups = ['features', 'texts', 'integrations'];
+	const activeGroup = groups.find((group) => allCards[group].some((card) => card.id === settingsCardState[group])) || 'features';
+	$settingsSingle.innerHTML = renderCardSwitcher(activeGroup, allCards[activeGroup]);
+	const mappingSelect = $settingsSingle.querySelector('select[data-settings-path="site_integrations.giscus.mapping"]');
+	if (mappingSelect) mappingSelect.value = getByPath(settingsDraft, 'site_integrations.giscus.mapping');
 }
 
 function renderSettingsAll() {
-	renderSettingsFeatures();
-	renderSettingsTexts();
-	renderSettingsIntegrations();
+	renderSettingsSingle();
 	updateSettingsMeta();
-	showSettingsTab(settingsActiveTab);
 }
 
 async function loadSiteSettings() {
@@ -556,6 +581,18 @@ async function uploadReward(file) {
 	const resp = await fetch(baseUrl('/api/reward-image'), { method: 'POST', body: form });
 	const data = await resp.json();
 	if (!resp.ok) throw new Error(data.error || 'upload_failed');
+	return data;
+}
+
+async function uploadCursorSkin(file, shape, theme) {
+	const form = new FormData();
+	form.append('file', file);
+	form.append('shape', shape);
+	form.append('theme', theme);
+	const resp = await fetch(baseUrl('/api/cursor-skins'), { method: 'POST', body: form });
+	const data = await resp.json();
+	if (!resp.ok) throw new Error(data.error || 'upload_cursor_skin_failed');
+	if (data?.settings) settingsDraft = clone(data.settings);
 	return data;
 }
 
@@ -726,13 +763,48 @@ function showRewardUploadModal(file) {
 	});
 }
 
-document.querySelectorAll('.settings-tab').forEach((btn) => {
-	btn.addEventListener('click', () => {
-		const next = btn.getAttribute('data-settings-tab');
-		if (!next) return;
-		showSettingsTab(next);
+function showCursorUploadModal(shape, theme) {
+	const shapeLabel = shape === 'normal' ? '正常态' : shape === 'click' ? '点击态' : '加载态';
+	const themeLabel = theme === 'light' ? '浅色主题' : '深色主题';
+	openModal({
+		title: '上传鼠标皮肤',
+		bodyHtml: `
+			<div class="row">
+				<div class="label">目标槽位</div>
+				<div class="muted">${themeLabel} / ${shapeLabel}</div>
+				<div class="hint">文件会自动重命名为 cursor-${shape}-${theme}.* 并覆盖同槽位旧文件。</div>
+			</div>
+			<div class="row">
+				<div class="label">选择文件</div>
+				<input class="input" id="cursor-upload-file" type="file" accept="image/*,.cur,.ani" />
+			</div>
+			<div class="row">
+				<label class="inline muted">
+					<input type="checkbox" id="cursor-autopublish" />
+					上传后自动发布到 GitHub（会执行 git commit + git push）
+				</label>
+			</div>
+		`,
+		actionsHtml: `
+			<button class="btn" id="cursor-upload-cancel" type="button">取消</button>
+			<button class="btn" id="cursor-upload-confirm" type="button">确认上传</button>
+		`,
 	});
-});
+	$('cursor-upload-cancel')?.addEventListener('click', () => closeModal());
+	$('cursor-upload-confirm')?.addEventListener('click', async () => {
+		const file = $('cursor-upload-file')?.files?.[0];
+		if (!file) return alert('请先选择鼠标皮肤文件');
+		try {
+			const autoPublish = $('cursor-autopublish')?.checked ?? false;
+			await uploadCursorSkin(file, shape, theme);
+			closeModal();
+			renderSettingsAll();
+			if (autoPublish) await publishSite();
+		} catch (e) {
+			alert(String(e?.message || e));
+		}
+	});
+}
 
 document.querySelectorAll('[data-tree-item]').forEach((btn) => {
 	btn.addEventListener('click', () => {
@@ -741,16 +813,8 @@ document.querySelectorAll('[data-tree-item]').forEach((btn) => {
 		showAdminPage(page);
 		const group = btn.getAttribute('data-settings-group');
 		const target = btn.getAttribute('data-settings-card');
-		const tab = btn.getAttribute('data-settings-tab');
-		if (group && target) setSettingsCardByTree(group, target, tab);
+		if (group && target) setSettingsCardByTree(group, target);
 	});
-});
-
-$adminNavToggle?.addEventListener('click', () => {
-	if (!$adminNav) return;
-	const collapsed = $adminNav.dataset.collapsed === '1';
-	$adminNav.dataset.collapsed = collapsed ? '0' : '1';
-	$adminNavToggle.textContent = collapsed ? '收纳' : '展开';
 });
 
 document.querySelectorAll('[data-tree-toggle]').forEach((btn) => {
@@ -762,24 +826,17 @@ document.querySelectorAll('[data-tree-toggle]').forEach((btn) => {
 	});
 });
 
-[$settingsFeatures, $settingsTexts, $settingsIntegrations].forEach((el) => {
+[$settingsSingle].forEach((el) => {
 	el?.addEventListener('click', (ev) => {
-		const btn = ev.target?.closest?.('[data-card-toggle]');
-		if (!btn) return;
-		const group = btn.getAttribute('data-card-group');
-		const target = btn.getAttribute('data-card-target');
-		if (!group || !target) return;
-		settingsCardState[group] = target;
-		if (group === 'features') renderSettingsFeatures();
-		if (group === 'texts') renderSettingsTexts();
-		if (group === 'integrations') renderSettingsIntegrations();
+		const uploadBtn = ev.target?.closest?.('[data-cursor-upload]');
+		if (!uploadBtn) return;
+		const shape = uploadBtn.getAttribute('data-cursor-shape');
+		const theme = uploadBtn.getAttribute('data-cursor-theme');
+		if (!shape || !theme) return;
+		showCursorUploadModal(shape, theme);
 	});
-	el?.addEventListener('input', (ev) => {
-		syncInputToDraft(ev.target);
-	});
-	el?.addEventListener('change', (ev) => {
-		syncInputToDraft(ev.target);
-	});
+	el?.addEventListener('input', (ev) => syncInputToDraft(ev.target));
+	el?.addEventListener('change', (ev) => syncInputToDraft(ev.target));
 });
 
 $settingsPreview?.addEventListener('click', () => {

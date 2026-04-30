@@ -230,11 +230,61 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 				const text = cfg.site_texts || {};
 				const features = cfg.site_features || {};
 				const tweaks = cfg.site_theme_tweaks || {};
+				const encodeSvgCursor = (svg, hotspot = '4 2', fallback = 'auto') =>
+					`url("data:image/svg+xml,${encodeURIComponent(svg)}") ${hotspot}, ${fallback}`;
+				const buildCursorPreset = (theme, mode) => {
+					const isDark = theme === 'dark';
+					const stroke = isDark ? '#E5E7FF' : '#312E81';
+					const fill = isDark ? '#8B5CF6' : '#7C3AED';
+					const halo = isDark ? 'rgba(34,197,94,0.35)' : 'rgba(124,58,237,0.24)';
+					if (mode === 'normal') {
+						return encodeSvgCursor(
+							`<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M3 2l7.4 16.5 2.5-5.2L18 11z' fill='${fill}' stroke='${stroke}' stroke-width='1.6' stroke-linejoin='round'/><circle cx='17.5' cy='18.2' r='3.2' fill='${halo}'/></svg>`,
+							'3 1',
+							'auto'
+						);
+					}
+					if (mode === 'click') {
+						return encodeSvgCursor(
+							`<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='11.5' cy='11.5' r='5.2' fill='${fill}' stroke='${stroke}' stroke-width='1.5'/><circle cx='11.5' cy='11.5' r='9' fill='none' stroke='${stroke}' stroke-width='1.2' stroke-dasharray='2.2 2.2' opacity='0.9'/></svg>`,
+							'11 11',
+							'pointer'
+						);
+					}
+					return encodeSvgCursor(
+						`<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' fill='none' stroke='${stroke}' stroke-width='2' opacity='0.45'/><path d='M12 4a8 8 0 0 1 8 8' stroke='${fill}' stroke-width='2.4' stroke-linecap='round'/><circle cx='18.4' cy='12' r='1.8' fill='${fill}'/></svg>`,
+						'12 12',
+						'progress'
+					);
+				};
+				const resolveCursorValue = (rawValue, theme, mode) => {
+					const raw = String(rawValue ?? '').trim();
+					if (!raw) return buildCursorPreset(theme, mode);
+					if (/^(auto|default|pointer|progress)$/i.test(raw)) return buildCursorPreset(theme, mode);
+					return raw;
+				};
 
 				const applyCursor = () => {
-					if (!features?.visual?.customCursor) return;
+					const enabled = Boolean(features?.visual?.customCursor);
+					document.documentElement.dataset.cursorEnabled = enabled ? '1' : '0';
+					if (!enabled) return;
 					const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-					document.body.style.cursor = theme === 'dark' ? tweaks.cursorDark : tweaks.cursorLight;
+					const cursorNormal =
+						theme === 'dark'
+							? resolveCursorValue(tweaks.cursorNormalDark || tweaks.cursorDark, 'dark', 'normal')
+							: resolveCursorValue(tweaks.cursorNormalLight || tweaks.cursorLight, 'light', 'normal');
+					const cursorClick =
+						theme === 'dark'
+							? resolveCursorValue(tweaks.cursorClickDark, 'dark', 'click')
+							: resolveCursorValue(tweaks.cursorClickLight, 'light', 'click');
+					const cursorLoading =
+						theme === 'dark'
+							? resolveCursorValue(tweaks.cursorLoadingDark, 'dark', 'loading')
+							: resolveCursorValue(tweaks.cursorLoadingLight, 'light', 'loading');
+					const rootStyle = document.documentElement.style;
+					rootStyle.setProperty('--site-cursor-normal', String(cursorNormal));
+					rootStyle.setProperty('--site-cursor-click', String(cursorClick));
+					rootStyle.setProperty('--site-cursor-loading', String(cursorLoading));
 				};
 				const ensureCursorObserver = () => {
 					if (window.__SITE_CURSOR_OBSERVED__) return;
@@ -332,11 +382,23 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 					showFestival();
 				};
 
+				const setupLoadingCursor = () => {
+					if (window.__SITE_CURSOR_LOADING_BINDED__) return;
+					window.__SITE_CURSOR_LOADING_BINDED__ = true;
+					document.addEventListener('astro:before-preparation', () => {
+						document.documentElement.dataset.siteLoading = '1';
+					});
+					document.addEventListener('astro:page-load', () => {
+						document.documentElement.dataset.siteLoading = '0';
+					});
+				};
+
 				if (document.readyState === 'loading') {
 					document.addEventListener('DOMContentLoaded', runEnhancements, { once: true });
 				} else {
 					runEnhancements();
 				}
+				setupLoadingCursor();
 				document.addEventListener('astro:page-load', runEnhancements);
 			})();
 		</script>

@@ -16,12 +16,14 @@ const upload = multer({ storage: multer.memoryStorage() });
 const projectRoot = process.cwd();
 const postsDir = path.join(projectRoot, 'src', 'content', 'blog');
 const publicDir = path.join(projectRoot, 'public');
+const cursorDir = path.join(publicDir, 'cursors');
 const adminPublicDir = path.join(projectRoot, 'tools', 'admin', 'public');
 const dataDir = path.join(projectRoot, 'data');
 const settingsPath = path.join(dataDir, 'site-settings.json');
 
 await fs.mkdir(postsDir, { recursive: true });
 await fs.mkdir(publicDir, { recursive: true });
+await fs.mkdir(cursorDir, { recursive: true });
 await fs.mkdir(dataDir, { recursive: true });
 
 const defaultSiteSettings = {
@@ -75,8 +77,12 @@ const defaultSiteSettings = {
 	site_theme_tweaks: {
 		viewTransitionDurationMs: 260,
 		viewTransitionEasing: 'ease',
-		cursorLight: 'auto',
-		cursorDark: 'auto',
+		cursorNormalLight: 'auto',
+		cursorNormalDark: 'auto',
+		cursorClickLight: 'pointer',
+		cursorClickDark: 'pointer',
+		cursorLoadingLight: 'progress',
+		cursorLoadingDark: 'progress',
 		greetingMorningEndHour: 11,
 		greetingNoonEndHour: 14,
 		greetingAfternoonEndHour: 18,
@@ -259,8 +265,12 @@ const siteSettingsMeta = {
 	site_theme_tweaks: [
 		{ key: 'site_theme_tweaks.viewTransitionDurationMs', type: 'number', control: 'number' },
 		{ key: 'site_theme_tweaks.viewTransitionEasing', type: 'string', control: 'input' },
-		{ key: 'site_theme_tweaks.cursorLight', type: 'string', control: 'input' },
-		{ key: 'site_theme_tweaks.cursorDark', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.cursorNormalLight', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.cursorNormalDark', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.cursorClickLight', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.cursorClickDark', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.cursorLoadingLight', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.cursorLoadingDark', type: 'string', control: 'input' },
 		{ key: 'site_theme_tweaks.uptimeStartAt', type: 'string', control: 'datetime-local' },
 	],
 	site_integrations: [
@@ -284,6 +294,43 @@ md.use(anchor, { level: [1, 2, 3, 4], permalink: false });
 function safeBasename(fileName) {
 	const base = path.parse(fileName).name;
 	return base.trim().replace(/[\\/:*?"<>|]/g, '_');
+}
+
+function sanitizeCursorSlot(shape, theme) {
+	const shapeMap = {
+		normal: 'normal',
+		click: 'click',
+		loading: 'loading',
+	};
+	const themeMap = {
+		light: 'light',
+		dark: 'dark',
+	};
+	return {
+		shape: shapeMap[String(shape || '').toLowerCase()] || '',
+		theme: themeMap[String(theme || '').toLowerCase()] || '',
+	};
+}
+
+function normalizeCursorExt(originalName, mimeType) {
+	let ext = String(path.extname(originalName || '')).toLowerCase();
+	if (!ext) {
+		const mime = String(mimeType || '').toLowerCase();
+		if (mime === 'image/png') ext = '.png';
+		else if (mime === 'image/jpeg') ext = '.jpg';
+		else if (mime === 'image/webp') ext = '.webp';
+		else if (mime === 'image/gif') ext = '.gif';
+		else if (mime === 'image/svg+xml') ext = '.svg';
+		else if (mime === 'image/x-icon' || mime === 'image/vnd.microsoft.icon') ext = '.cur';
+		else ext = '.png';
+	}
+	if (!/^\.[a-z0-9]+$/i.test(ext)) ext = '.png';
+	return ext;
+}
+
+function toCursorCssValue(filePath) {
+	const safePath = String(filePath || '').replace(/"/g, '%22');
+	return `url("${safePath}") 8 8, auto`;
 }
 
 function decodePossiblyMojibakeName(name) {
@@ -461,8 +508,28 @@ function normalizeSiteSettings(input) {
 				tt.viewTransitionEasing,
 				defaultSiteSettings.site_theme_tweaks.viewTransitionEasing
 			),
-			cursorLight: asString(tt.cursorLight, defaultSiteSettings.site_theme_tweaks.cursorLight),
-			cursorDark: asString(tt.cursorDark, defaultSiteSettings.site_theme_tweaks.cursorDark),
+			// 向后兼容旧字段 cursorLight/cursorDark。
+			cursorNormalLight: asString(
+				tt.cursorNormalLight,
+				asString(tt.cursorLight, defaultSiteSettings.site_theme_tweaks.cursorNormalLight)
+			),
+			cursorNormalDark: asString(
+				tt.cursorNormalDark,
+				asString(tt.cursorDark, defaultSiteSettings.site_theme_tweaks.cursorNormalDark)
+			),
+			cursorClickLight: asString(
+				tt.cursorClickLight,
+				defaultSiteSettings.site_theme_tweaks.cursorClickLight
+			),
+			cursorClickDark: asString(tt.cursorClickDark, defaultSiteSettings.site_theme_tweaks.cursorClickDark),
+			cursorLoadingLight: asString(
+				tt.cursorLoadingLight,
+				defaultSiteSettings.site_theme_tweaks.cursorLoadingLight
+			),
+			cursorLoadingDark: asString(
+				tt.cursorLoadingDark,
+				defaultSiteSettings.site_theme_tweaks.cursorLoadingDark
+			),
 			greetingMorningEndHour: asNumber(
 				tt.greetingMorningEndHour,
 				defaultSiteSettings.site_theme_tweaks.greetingMorningEndHour,
@@ -922,6 +989,52 @@ app.get('/api/reward-image', async (_req, res) => {
 			.sort((a, b) => a.localeCompare(b));
 		const file = files[0] ?? '';
 		res.json({ path: file ? `/${file}` : '' });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
+
+app.post('/api/cursor-skins', upload.single('file'), async (req, res) => {
+	try {
+		const file = req.file;
+		if (!file) return res.status(400).json({ error: 'missing_file' });
+		const { shape, theme } = sanitizeCursorSlot(req.body?.shape, req.body?.theme);
+		if (!shape || !theme) return res.status(400).json({ error: 'invalid_cursor_slot' });
+
+		const originalname = decodePossiblyMojibakeName(file.originalname);
+		const ext = normalizeCursorExt(originalname, file.mimetype);
+		const fileBase = `cursor-${shape}-${theme}`;
+		const nextFileName = `${fileBase}${ext}`;
+		const nextFilePath = path.join(cursorDir, nextFileName);
+
+		const oldFiles = (await fs.readdir(cursorDir)).filter((name) =>
+			name.startsWith(`${fileBase}.`)
+		);
+		await Promise.all(
+			oldFiles
+				.filter((name) => name !== nextFileName)
+				.map((name) => fs.unlink(path.join(cursorDir, name)).catch(() => null))
+		);
+		await fs.writeFile(nextFilePath, file.buffer);
+
+		const settings = await readSiteSettings();
+		const relativePath = `/cursors/${nextFileName}`;
+		const cssValue = toCursorCssValue(relativePath);
+		if (shape === 'normal' && theme === 'light') settings.site_theme_tweaks.cursorNormalLight = cssValue;
+		if (shape === 'normal' && theme === 'dark') settings.site_theme_tweaks.cursorNormalDark = cssValue;
+		if (shape === 'click' && theme === 'light') settings.site_theme_tweaks.cursorClickLight = cssValue;
+		if (shape === 'click' && theme === 'dark') settings.site_theme_tweaks.cursorClickDark = cssValue;
+		if (shape === 'loading' && theme === 'light') settings.site_theme_tweaks.cursorLoadingLight = cssValue;
+		if (shape === 'loading' && theme === 'dark') settings.site_theme_tweaks.cursorLoadingDark = cssValue;
+		settings.savedAt = new Date().toISOString();
+		const normalized = await writeSiteSettings(settings);
+
+		res.json({
+			ok: true,
+			path: relativePath,
+			cssValue,
+			settings: normalized,
+		});
 	} catch (e) {
 		res.status(500).json({ error: String(e) });
 	}

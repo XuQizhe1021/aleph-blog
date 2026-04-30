@@ -51,8 +51,12 @@ export type SiteTexts = {
 export type SiteThemeTweaks = {
 	viewTransitionDurationMs: number;
 	viewTransitionEasing: string;
-	cursorLight: string;
-	cursorDark: string;
+	cursorNormalLight: string;
+	cursorNormalDark: string;
+	cursorClickLight: string;
+	cursorClickDark: string;
+	cursorLoadingLight: string;
+	cursorLoadingDark: string;
 	greetingMorningEndHour: number;
 	greetingNoonEndHour: number;
 	greetingAfternoonEndHour: number;
@@ -154,8 +158,12 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
 	site_theme_tweaks: {
 		viewTransitionDurationMs: 260,
 		viewTransitionEasing: 'ease',
-		cursorLight: 'auto',
-		cursorDark: 'auto',
+		cursorNormalLight: 'auto',
+		cursorNormalDark: 'auto',
+		cursorClickLight: 'pointer',
+		cursorClickDark: 'pointer',
+		cursorLoadingLight: 'progress',
+		cursorLoadingDark: 'progress',
 		greetingMorningEndHour: 11,
 		greetingNoonEndHour: 14,
 		greetingAfternoonEndHour: 18,
@@ -309,8 +317,34 @@ export function normalizeSiteSettings(input: unknown): SiteSettings {
 				tt.viewTransitionEasing,
 				DEFAULT_SITE_SETTINGS.site_theme_tweaks.viewTransitionEasing
 			),
-			cursorLight: asString(tt.cursorLight, DEFAULT_SITE_SETTINGS.site_theme_tweaks.cursorLight),
-			cursorDark: asString(tt.cursorDark, DEFAULT_SITE_SETTINGS.site_theme_tweaks.cursorDark),
+			// 兼容历史字段 cursorLight/cursorDark，并优先使用新的三态字段。
+			cursorNormalLight: asString(
+				tt.cursorNormalLight,
+				asString(
+					(tt as Partial<{ cursorLight: string }>).cursorLight,
+					DEFAULT_SITE_SETTINGS.site_theme_tweaks.cursorNormalLight
+				)
+			),
+			cursorNormalDark: asString(
+				tt.cursorNormalDark,
+				asString(
+					(tt as Partial<{ cursorDark: string }>).cursorDark,
+					DEFAULT_SITE_SETTINGS.site_theme_tweaks.cursorNormalDark
+				)
+			),
+			cursorClickLight: asString(
+				tt.cursorClickLight,
+				DEFAULT_SITE_SETTINGS.site_theme_tweaks.cursorClickLight
+			),
+			cursorClickDark: asString(tt.cursorClickDark, DEFAULT_SITE_SETTINGS.site_theme_tweaks.cursorClickDark),
+			cursorLoadingLight: asString(
+				tt.cursorLoadingLight,
+				DEFAULT_SITE_SETTINGS.site_theme_tweaks.cursorLoadingLight
+			),
+			cursorLoadingDark: asString(
+				tt.cursorLoadingDark,
+				DEFAULT_SITE_SETTINGS.site_theme_tweaks.cursorLoadingDark
+			),
 			greetingMorningEndHour: asNumber(
 				tt.greetingMorningEndHour,
 				DEFAULT_SITE_SETTINGS.site_theme_tweaks.greetingMorningEndHour,

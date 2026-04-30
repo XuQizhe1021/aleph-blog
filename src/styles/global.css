@@ -90,6 +90,26 @@ body {
 		'Segoe UI Emoji';
 }
 
+/* 自定义鼠标皮肤：按主题写入 CSS 变量，统一覆盖普通/点击/加载三种形态。 */
+html[data-cursor-enabled='1'] body {
+	cursor: var(--site-cursor-normal, auto);
+}
+
+html[data-cursor-enabled='1']
+	:is(a, button, [role='button'], input, textarea, select, summary, label[for], .btn, .item):hover {
+	cursor: var(--site-cursor-click, pointer);
+}
+
+html[data-cursor-enabled='1']
+	:is(a, button, [role='button'], input, textarea, select, summary, label[for], .btn, .item):active {
+	cursor: var(--site-cursor-click, pointer);
+}
+
+html[data-cursor-enabled='1'][data-site-loading='1'],
+html[data-cursor-enabled='1'][data-site-loading='1'] * {
+	cursor: var(--site-cursor-loading, progress) !important;
+}
+
 body::before {
 	content: '';
 	position: fixed;

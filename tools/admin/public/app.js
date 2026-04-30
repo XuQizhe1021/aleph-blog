@@ -180,11 +180,26 @@ function renderList() {
 
 function showAdminPage(page) {
 	adminPage = page;
-	document.querySelectorAll('[data-admin-page]').forEach((btn) => {
-		btn.classList.toggle('active', btn.getAttribute('data-admin-page') === page);
+	document.querySelectorAll('[data-tree-item]').forEach((btn) => {
+		const btnPage = btn.getAttribute('data-admin-page');
+		const isSettingsTarget = btnPage === 'settings' && page === 'settings';
+		btn.classList.toggle('active', btnPage === page && !isSettingsTarget);
 	});
 	document.querySelectorAll('[data-admin-page-panel]').forEach((panel) => {
 		panel.hidden = panel.getAttribute('data-admin-page-panel') !== page;
+	});
+}
+
+function setSettingsCardByTree(group, target, tab) {
+	if (!group || !target) return;
+	if (tab) showSettingsTab(tab);
+	settingsCardState[group] = target;
+	if (group === 'features') renderSettingsFeatures();
+	if (group === 'texts') renderSettingsTexts();
+	if (group === 'integrations') renderSettingsIntegrations();
+	document.querySelectorAll('[data-tree-item][data-settings-card]').forEach((btn) => {
+		const same = btn.getAttribute('data-settings-group') === group && btn.getAttribute('data-settings-card') === settingsCardState[group];
+		btn.classList.toggle('active', same);
 	});
 }
 
@@ -238,17 +253,20 @@ function getFieldHelp(path) {
 }
 
 function renderCardSwitcher(group, cards) {
-	const active = settingsCardState[group] || cards[0]?.id;
+	const safeCards = Array.isArray(cards) ? cards : [];
+	const activeId = settingsCardState[group];
+	const active = safeCards.some((item) => item.id === activeId) ? activeId : safeCards[0]?.id;
+	settingsCardState[group] = active;
 	return `
 		<div class="settings-card-switch" data-card-group="${group}">
 			<div class="settings-card-tabs">
-				${cards
+				${safeCards
 					.map(
 						(card) => `<button class="btn settings-card-tab ${active === card.id ? 'active' : ''}" type="button" data-card-toggle data-card-group="${group}" data-card-target="${card.id}">${card.title}</button>`
 					)
 					.join('')}
 			</div>
-			${cards
+			${safeCards
 				.map(
 					(card) => `
 				<section class="settings-card ${active === card.id ? 'active' : ''}" data-card-id="${card.id}" ${active === card.id ? '' : 'hidden'}>
@@ -835,11 +853,15 @@ document.querySelectorAll('.settings-tab').forEach((btn) => {
 	});
 });
 
-document.querySelectorAll('[data-admin-page]').forEach((btn) => {
+document.querySelectorAll('[data-tree-item]').forEach((btn) => {
 	btn.addEventListener('click', () => {
 		const page = btn.getAttribute('data-admin-page');
 		if (!page) return;
 		showAdminPage(page);
+		const group = btn.getAttribute('data-settings-group');
+		const target = btn.getAttribute('data-settings-card');
+		const tab = btn.getAttribute('data-settings-tab');
+		if (group && target) setSettingsCardByTree(group, target, tab);
 	});
 });
 
@@ -848,6 +870,15 @@ $adminNavToggle?.addEventListener('click', () => {
 	const collapsed = $adminNav.dataset.collapsed === '1';
 	$adminNav.dataset.collapsed = collapsed ? '0' : '1';
 	$adminNavToggle.textContent = collapsed ? '收纳' : '展开';
+});
+
+document.querySelectorAll('[data-tree-toggle]').forEach((btn) => {
+	btn.addEventListener('click', () => {
+		const node = btn.closest('[data-tree-node]');
+		if (!(node instanceof HTMLElement)) return;
+		const open = node.dataset.open !== '0';
+		node.dataset.open = open ? '0' : '1';
+	});
 });
 
 [$settingsFeatures, $settingsTexts, $settingsIntegrations].forEach((el) => {
@@ -893,7 +924,12 @@ $settingsPublish?.addEventListener('click', async () => {
 	try {
 		await saveSiteSettings();
 		await publishSiteSettings();
-		alert('配置已发布，生效时间已记录。若为静态站点，请配合发布流程推送构建。');
+		const publishResult = await publishSite({ silent: true });
+		if (publishResult === 'no_changes') {
+			alert('配置已发布，但仓库无新增变更可推送。');
+			return;
+		}
+		alert('配置已发布并自动推送，等待 Actions 部署完成即可更新线上站点。');
 	} catch (e) {
 		alert(String(e?.message || e));
 	}
@@ -927,7 +963,8 @@ $openSite?.addEventListener('click', () => {
 	window.open(url, '_blank', 'noopener,noreferrer');
 });
 
-async function publishSite() {
+async function publishSite(options = {}) {
+	const silent = Boolean(options.silent);
 	const resp = await fetch(baseUrl('/api/publish'), {
 		method: 'POST',
 		headers: { 'content-type': 'application/json' },
@@ -936,10 +973,11 @@ async function publishSite() {
 	const data = await resp.json();
 	if (!resp.ok) throw new Error(data.error || 'publish_failed');
 	if (data.message === 'no_changes') {
-		alert('没有需要发布的改动');
-		return;
+		if (!silent) alert('没有需要发布的改动');
+		return data.message;
 	}
-	alert('已提交并推送到 GitHub，等待 Actions 部署完成即可更新线上站点');
+	if (!silent) alert('已提交并推送到 GitHub，等待 Actions 部署完成即可更新线上站点');
+	return data.message || 'ok';
 }
 
 $publish?.addEventListener('click', async () => {

@@ -105,11 +105,14 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 					const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 					document.body.style.cursor = theme === 'dark' ? tweaks.cursorDark : tweaks.cursorLight;
 				};
-				applyCursor();
-				new MutationObserver(applyCursor).observe(document.documentElement, {
-					attributes: true,
-					attributeFilter: ['data-theme'],
-				});
+				const ensureCursorObserver = () => {
+					if (window.__SITE_CURSOR_OBSERVED__) return;
+					window.__SITE_CURSOR_OBSERVED__ = true;
+					new MutationObserver(applyCursor).observe(document.documentElement, {
+						attributes: true,
+						attributeFilter: ['data-theme'],
+					});
+				};
 
 				const enableCodeCopy = () => {
 					if (!features?.content?.codeCopy) return;
@@ -135,7 +138,6 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 						pre.appendChild(btn);
 					});
 				};
-				enableCodeCopy();
 
 				const enableMermaid = async () => {
 					if (!features?.content?.mermaid) return;
@@ -177,6 +179,7 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 
 				const showFestival = () => {
 					if (!features?.visual?.festivalEffect) return;
+					if (document.body?.dataset?.festivalShown === '1') return;
 					const now = new Date();
 					const mmdd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 					const start = tweaks.festivalStartDate;
@@ -185,9 +188,25 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 					const el = document.createElement('div');
 					el.className = 'festival-effect';
 					document.body.appendChild(el);
+					document.body.dataset.festivalShown = '1';
 					window.setTimeout(() => el.remove(), Number(tweaks.festivalDurationMs || 1800));
 				};
-				showFestival();
+
+				// Astro 页面切换后会重新渲染正文，这里统一在每次页面就绪时执行增强逻辑。
+				const runEnhancements = () => {
+					applyCursor();
+					ensureCursorObserver();
+					enableCodeCopy();
+					void enableMermaid();
+					showFestival();
+				};
+
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', runEnhancements, { once: true });
+				} else {
+					runEnhancements();
+				}
+				document.addEventListener('astro:page-load', runEnhancements);
 			})();
 		</script>
 	</head>

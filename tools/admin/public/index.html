@@ -36,9 +36,50 @@
 						<button class="btn" id="admin-nav-toggle" type="button">收纳</button>
 					</div>
 					<nav class="admin-nav-list" aria-label="后台功能导航">
-						<button class="btn admin-nav-item active" type="button" data-admin-page="posts">文章管理</button>
-						<button class="btn admin-nav-item" type="button" data-admin-page="assets">资源管理</button>
-						<button class="btn admin-nav-item" type="button" data-admin-page="settings">站点配置</button>
+						<button class="btn admin-nav-item active" type="button" data-tree-item data-admin-page="posts">文章管理</button>
+						<button class="btn admin-nav-item" type="button" data-tree-item data-admin-page="assets">资源管理</button>
+						<div class="tree-node" data-tree-node data-open="1">
+							<button class="btn admin-nav-item tree-parent" type="button" data-tree-toggle>
+								<span class="tree-arrow">▾</span>
+								<span class="tree-label">站点配置</span>
+							</button>
+							<div class="tree-children">
+								<div class="tree-node" data-tree-node data-open="1">
+									<button class="btn admin-nav-item tree-parent" type="button" data-tree-toggle>
+										<span class="tree-arrow">▾</span>
+										<span class="tree-label">功能开关</span>
+									</button>
+									<div class="tree-children">
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="features" data-settings-group="features" data-settings-card="features-视觉微调">视觉微调</button>
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="features" data-settings-group="features" data-settings-card="features-内容增强">内容增强</button>
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="features" data-settings-group="features" data-settings-card="features-实用工具">实用工具</button>
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="features" data-settings-group="features" data-settings-card="features-社交互动">社交互动</button>
+									</div>
+								</div>
+								<div class="tree-node" data-tree-node data-open="1">
+									<button class="btn admin-nav-item tree-parent" type="button" data-tree-toggle>
+										<span class="tree-arrow">▾</span>
+										<span class="tree-label">文案与视觉</span>
+									</button>
+									<div class="tree-children">
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="texts" data-settings-group="texts" data-settings-card="texts-文案配置">文案配置</button>
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="texts" data-settings-group="texts" data-settings-card="texts-视觉参数">视觉参数</button>
+									</div>
+								</div>
+								<div class="tree-node" data-tree-node data-open="1">
+									<button class="btn admin-nav-item tree-parent" type="button" data-tree-toggle>
+										<span class="tree-arrow">▾</span>
+										<span class="tree-label">集成配置</span>
+									</button>
+									<div class="tree-children">
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="integrations" data-settings-group="integrations" data-settings-card="integrations-giscus">Giscus 评论</button>
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="integrations" data-settings-group="integrations" data-settings-card="integrations-link-0">链接项 1</button>
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="integrations" data-settings-group="integrations" data-settings-card="integrations-link-1">链接项 2</button>
+										<button class="btn admin-nav-item tree-child" type="button" data-tree-item data-admin-page="settings" data-settings-tab="integrations" data-settings-group="integrations" data-settings-card="integrations-link-2">链接项 3</button>
+									</div>
+								</div>
+							</div>
+						</div>
 					</nav>
 				</aside>
 				<section class="admin-pages">
@@ -110,7 +151,7 @@
 								</div>
 							</div>
 							<div class="muted viewer-sub" id="settings-meta">加载中...</div>
-							<div class="settings-tabs">
+							<div class="settings-tabs" hidden>
 								<button class="btn settings-tab active" type="button" data-settings-tab="features">功能开关</button>
 								<button class="btn settings-tab" type="button" data-settings-tab="texts">文案配置</button>
 								<button class="btn settings-tab" type="button" data-settings-tab="integrations">第三方集成</button>

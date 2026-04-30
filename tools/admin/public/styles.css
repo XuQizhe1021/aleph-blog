@@ -309,11 +309,48 @@ a {
 
 .admin-nav-item {
 	justify-content: flex-start;
+	width: 100%;
 }
 
 .admin-nav-item.active {
 	border-color: color-mix(in oklab, var(--accent), var(--border) 10%);
 	box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 86%);
+}
+
+.tree-node {
+	display: grid;
+	gap: 6px;
+}
+
+.tree-parent {
+	justify-content: flex-start;
+}
+
+.tree-children {
+	display: grid;
+	gap: 6px;
+	padding-left: 12px;
+	border-left: 1px dashed color-mix(in oklab, var(--muted), transparent 50%);
+}
+
+.tree-child {
+	height: 32px;
+	font-size: 12px;
+	justify-content: flex-start;
+}
+
+.tree-arrow {
+	width: 12px;
+	text-align: center;
+	color: var(--muted);
+}
+
+.tree-node[data-open='0'] > .tree-children {
+	display: none;
+}
+
+.tree-node[data-open='0'] > .tree-parent .tree-arrow {
+	transform: rotate(-90deg);
 }
 
 .admin-nav[data-collapsed='1'] {
@@ -333,6 +370,17 @@ a {
 .admin-nav[data-collapsed='1'] .admin-nav-item::after {
 	font-size: 12px;
 	content: '页';
+}
+
+.admin-nav[data-collapsed='1'] .tree-children,
+.admin-nav[data-collapsed='1'] .tree-label,
+.admin-nav[data-collapsed='1'] .tree-arrow {
+	display: none;
+}
+
+.admin-nav[data-collapsed='1'] .tree-parent::after {
+	content: '配';
+	font-size: 12px;
 }
 
 .admin-pages {

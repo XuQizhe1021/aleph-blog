@@ -12,6 +12,9 @@
 	--code-scroll-track: rgba(255, 255, 255, 0.08);
 	--code-scroll-thumb: rgba(255, 255, 255, 0.28);
 	--code-scroll-thumb-hover: rgba(255, 255, 255, 0.42);
+	--site-scroll-track: color-mix(in oklab, var(--panel-strong), transparent 38%);
+	--site-scroll-thumb: color-mix(in oklab, var(--accent), var(--panel-strong) 58%);
+	--site-scroll-thumb-hover: color-mix(in oklab, var(--accent2), var(--accent) 45%);
 	--mono:
 		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
 		monospace;
@@ -30,11 +33,43 @@
 	--code-scroll-track: rgba(18, 20, 26, 0.08);
 	--code-scroll-thumb: rgba(18, 20, 26, 0.28);
 	--code-scroll-thumb-hover: rgba(18, 20, 26, 0.42);
+	--site-scroll-track: color-mix(in oklab, var(--panel-strong), transparent 35%);
+	--site-scroll-thumb: color-mix(in oklab, var(--accent), var(--panel-strong) 62%);
+	--site-scroll-thumb-hover: color-mix(in oklab, var(--accent2), var(--accent) 42%);
 }
 
 html,
 body {
 	height: 100%;
+}
+
+html {
+	scrollbar-gutter: stable;
+	scrollbar-width: thin;
+	scrollbar-color: var(--site-scroll-thumb) var(--site-scroll-track);
+}
+
+/* 全站滚动容器统一使用主题联动滚动条。 */
+*::-webkit-scrollbar {
+	width: 12px;
+	height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+	background: var(--site-scroll-track);
+	border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+	background: var(--site-scroll-thumb);
+	border-radius: 999px;
+	border: 3px solid transparent;
+	background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+	background: var(--site-scroll-thumb-hover);
+	background-clip: content-box;
 }
 
 body {

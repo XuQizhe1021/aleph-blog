@@ -14,45 +14,81 @@ try {
 } catch {}
 ---
 
-<aside class="reward" id="reward-panel" aria-label="打赏面板">
-	<button class="btn reward-toggle" type="button" id="reward-toggle">打赏</button>
-	<div class="reward-card panel" id="reward-card" hidden>
+<aside class="reward" data-reward-panel aria-label="打赏面板">
+	<button class="btn reward-toggle" type="button" data-reward-toggle>打赏</button>
+	<div class="reward-card panel" data-reward-card hidden>
 		<div class="reward-title">感谢支持</div>
 		<img
-			id="reward-image"
+			data-reward-image
 			class="reward-image"
 			src={withBase(rewardImagePath)}
 			alt="打赏二维码"
 			loading="lazy"
 		/>
-		<div class="reward-fallback muted" id="reward-fallback" hidden>未配置打赏图片</div>
+		<div class="reward-fallback muted" data-reward-fallback hidden>未配置打赏图片</div>
 	</div>
 	<script is:inline>
 		(() => {
-			const toggle = document.getElementById('reward-toggle');
-			const card = document.getElementById('reward-card');
-			const img = document.getElementById('reward-image');
-			const panel = document.getElementById('reward-panel');
-			const fallback = document.getElementById('reward-fallback');
 			const key = 'reward_open';
+			const readOpen = () => {
+				try {
+					return localStorage.getItem(key) === '1';
+				} catch {
+					return false;
+				}
+			};
+			const writeOpen = (open) => {
+				try {
+					localStorage.setItem(key, open ? '1' : '0');
+				} catch {}
+			};
 
-			if (img) {
-				img.addEventListener('error', () => {
-					img.style.display = 'none';
-					if (fallback) fallback.hidden = false;
-					if (panel) panel.style.display = '';
+			const state = window.__SITE_REWARD_STATE__ || { open: readOpen() };
+			const syncDom = () => {
+				document.querySelectorAll('[data-reward-card]').forEach((card) => {
+					card.hidden = !state.open;
+				});
+			};
+			const setOpen = (open, persist = true) => {
+				state.open = Boolean(open);
+				syncDom();
+				if (persist) writeOpen(state.open);
+			};
+			const bindImageFallback = () => {
+				document.querySelectorAll('[data-reward-image]').forEach((img) => {
+					if (!(img instanceof HTMLImageElement)) return;
+					if (img.dataset.rewardBound === '1') return;
+					img.dataset.rewardBound = '1';
+					// 仅在图片加载失败时显示兜底文案，避免面板空白。
+					img.addEventListener('error', () => {
+						img.style.display = 'none';
+						const panel = img.closest('[data-reward-panel]');
+						panel?.querySelectorAll('[data-reward-fallback]').forEach((el) => {
+							el.hidden = false;
+						});
+						if (panel instanceof HTMLElement) panel.style.display = '';
+					});
+				});
+			};
+
+			if (!window.__SITE_REWARD_BINDED__) {
+				window.__SITE_REWARD_BINDED__ = true;
+				// 使用事件委托，确保 Astro 切页后新按钮仍可响应点击。
+				document.addEventListener('click', (event) => {
+					const target = event.target;
+					if (!(target instanceof Element)) return;
+					if (!target.closest('[data-reward-toggle]')) return;
+					setOpen(!state.open);
+				});
+				document.addEventListener('astro:page-load', () => {
+					syncDom();
+					bindImageFallback();
 				});
 			}
 
-			const setOpen = (open) => {
-				if (!card) return;
-				card.hidden = !open;
-				localStorage.setItem(key, open ? '1' : '0');
-			};
-
-			const open = localStorage.getItem(key) === '1';
-			setOpen(open);
-			toggle?.addEventListener('click', () => setOpen(card?.hidden ?? true));
+			window.__SITE_REWARD_STATE__ = state;
+			setOpen(state.open, false);
+			bindImageFallback();
 		})();
 	</script>
 </aside>

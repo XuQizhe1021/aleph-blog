@@ -28,15 +28,21 @@ if (settings.site_features.social.linkCard) {
 			))}
 		</nav>
 		<div class="actions">
-			<button class="btn menu" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-drawer">
+			<button
+				class="btn menu"
+				type="button"
+				data-nav-toggle
+				aria-expanded="false"
+				aria-controls="nav-drawer"
+			>
 				<span class="muted">菜单</span>
 			</button>
-			<button class="btn" id="theme-toggle" type="button">
-				<span class="muted" id="theme-label">主题</span>
+			<button class="btn" type="button" data-theme-toggle>
+				<span class="muted" data-theme-label>主题</span>
 			</button>
 		</div>
 	</div>
-	<div class="nav-drop" id="nav-drawer" aria-hidden="true">
+	<div class="nav-drop" id="nav-drawer" data-nav-drawer aria-hidden="true">
 		<nav class="nav-drop-inner" aria-label="移动端导航">
 			{dynamicNav.map((item) => (
 				<a class="nav-drop-link" href={withBase(item.href)}>
@@ -47,48 +53,10 @@ if (settings.site_features.social.linkCard) {
 	</div>
 	<script is:inline>
 		(() => {
-			const getTheme = () => (document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
-			const syncThemeLabel = () => {
-				const label = document.getElementById('theme-label');
-				if (label) label.textContent = getTheme() === 'dark' ? '深色' : '浅色';
-			};
-			const setTheme = (theme) => {
-				if (typeof window.__SITE_SET_THEME__ === 'function') {
-					window.__SITE_SET_THEME__(theme);
-					return;
-				}
-				const normalized = theme === 'dark' ? 'dark' : 'light';
-				document.documentElement.dataset.theme = normalized;
-				try {
-					localStorage.setItem('theme', normalized);
-				} catch {}
-				window.dispatchEvent(new CustomEvent('site:theme-change', { detail: { theme: normalized } }));
-			};
-
-			if (!window.__SITE_THEME_BINDED__) {
-				window.__SITE_THEME_BINDED__ = true;
-				// 事件委托：切页后按钮节点替换也不会丢失主题切换能力。
-				document.addEventListener('click', (event) => {
-					const target = event.target;
-					if (!(target instanceof Element)) return;
-					if (!target.closest('#theme-toggle')) return;
-					setTheme(getTheme() === 'dark' ? 'light' : 'dark');
-				});
-				window.addEventListener('site:theme-change', syncThemeLabel);
-			}
-			if (!window.__SITE_THEME_PAGELOAD_BINDED__) {
-				window.__SITE_THEME_PAGELOAD_BINDED__ = true;
-				document.addEventListener('astro:page-load', syncThemeLabel);
-			}
-			syncThemeLabel();
-		})();
-	</script>
-	<script is:inline>
-		(() => {
 			const root = document.documentElement;
 			const getHeader = () => document.querySelector('.site-header');
-			const getOpenBtn = () => document.getElementById('nav-toggle');
-			const getDrawer = () => document.getElementById('nav-drawer');
+			const getOpenBtn = () => document.querySelector('[data-nav-toggle]');
+			const getDrawer = () => document.querySelector('[data-nav-drawer]');
 
 			const setHeaderHeight = () => {
 				const header = getHeader();
@@ -113,11 +81,11 @@ if (settings.site_features.social.linkCard) {
 				document.addEventListener('click', (event) => {
 					const target = event.target;
 					if (!(target instanceof Element)) return;
-					if (target.closest('#nav-toggle')) {
+					if (target.closest('[data-nav-toggle]')) {
 						setOpen(root.dataset.navOpen !== '1');
 						return;
 					}
-					if (target.closest('#nav-drawer a')) {
+					if (target.closest('[data-nav-drawer] a')) {
 						setOpen(false);
 					}
 				});

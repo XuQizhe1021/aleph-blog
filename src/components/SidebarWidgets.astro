@@ -44,68 +44,6 @@ const settings = await getSiteSettings();
 	) : null
 }
 
-<script is:inline>
-	(() => {
-		const root = document.documentElement;
-		const syncSidebarState = (open) => {
-			root.dataset.sidebarOpen = open ? '1' : '';
-			if (!open) delete root.dataset.sidebarOpen;
-			const drawer = document.querySelector('[data-sidebar]');
-			if (drawer instanceof HTMLElement) {
-				drawer.dataset.open = open ? '1' : '0';
-				drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
-			}
-		};
-
-		const setOpen = (open) => {
-			syncSidebarState(open);
-			try {
-				localStorage.setItem('site_sidebar_open', open ? '1' : '0');
-			} catch {}
-		};
-
-		const applyStoredState = () => {
-			const drawer = document.querySelector('[data-sidebar]');
-			let initial = null;
-			try {
-				initial = localStorage.getItem('site_sidebar_open');
-			} catch {}
-			if (initial === '0' || initial === '1') {
-				syncSidebarState(initial === '1');
-				return;
-			}
-			// 首次无缓存时，沿用服务端初始状态，避免切页闪动“先开后关”。
-			const fromSSR = drawer instanceof HTMLElement ? drawer.dataset.open === '1' : false;
-			syncSidebarState(fromSSR);
-			try {
-				localStorage.setItem('site_sidebar_open', fromSSR ? '1' : '0');
-			} catch {}
-		};
-
-		if (!window.__SITE_SIDEBAR_BINDED__) {
-			window.__SITE_SIDEBAR_BINDED__ = true;
-			// 使用事件委托，避免 Astro 切页后元素替换导致监听失效。
-			document.addEventListener('click', (event) => {
-				const target = event.target;
-				if (!(target instanceof Element)) return;
-				if (target.closest('[data-sidebar-launcher]')) {
-					setOpen(true);
-					return;
-				}
-				if (target.closest('[data-sidebar-close]')) {
-					setOpen(false);
-				}
-			});
-			window.addEventListener('keydown', (e) => {
-				if (e.key === 'Escape') setOpen(false);
-			});
-		}
-
-		applyStoredState();
-		document.addEventListener('astro:page-load', applyStoredState);
-	})();
-</script>
-
 <style>
 	.sidebar-launcher {
 		position: fixed;
@@ -135,8 +73,7 @@ const settings = await getSiteSettings();
 		overflow: auto;
 	}
 
-	html[data-sidebar-open='1'] .site-sidebar,
-	.site-sidebar[data-open='1'] {
+	html[data-sidebar-open='1'] .site-sidebar {
 		transform: translateX(0);
 	}
 

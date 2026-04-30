@@ -50,11 +50,17 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 		</style>
 		<script is:inline>
 			(() => {
+				if (window.__SITE_UI_STATE__) {
+					window.__SITE_UI_STATE__.syncControls();
+					return;
+				}
+
 				const root = document.documentElement;
 				const themeKey = 'theme';
 				const sidebarKey = 'site_sidebar_open';
+				const normalizeTheme = (value) => (value === 'dark' ? 'dark' : 'light');
 
-				const getPreferredTheme = () => {
+				const readTheme = () => {
 					try {
 						const stored = localStorage.getItem(themeKey);
 						if (stored === 'light' || stored === 'dark') return stored;
@@ -64,44 +70,123 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 					return prefersDark ? 'dark' : 'light';
 				};
 
-				const setTheme = (theme, persist = true) => {
-					const normalized = theme === 'dark' ? 'dark' : 'light';
-					root.dataset.theme = normalized;
-					if (persist) {
-						try {
-							localStorage.setItem(themeKey, normalized);
-						} catch {}
-					}
-					window.dispatchEvent(
-						new CustomEvent('site:theme-change', {
-							detail: { theme: normalized },
-						})
-					);
-				};
-
-				const applyTheme = () => setTheme(getPreferredTheme(), false);
-
-				const applySidebarState = () => {
-					let stored = null;
+				const readSidebarState = () => {
 					try {
-						stored = localStorage.getItem(sidebarKey);
+						const stored = localStorage.getItem(sidebarKey);
+						if (stored === '1') return true;
+						if (stored === '0') return false;
 					} catch {}
-					if (stored === '1') {
-						root.dataset.sidebarOpen = '1';
-						return;
-					}
-					delete root.dataset.sidebarOpen;
+					return null;
 				};
 
-				// 在首屏和 Astro 切页后都重放全局状态，避免主题/侧边栏因 DOM 替换回退到默认样式。
-				applyTheme();
-				applySidebarState();
-				document.addEventListener('astro:page-load', () => {
-					applyTheme();
-					applySidebarState();
-				});
+				const writeStorage = (key, value) => {
+					try {
+						localStorage.setItem(key, value);
+					} catch {}
+				};
 
-				window.__SITE_SET_THEME__ = setTheme;
+				const setThemeDom = (theme) => {
+					const normalized = normalizeTheme(theme);
+					root.dataset.theme = normalized;
+					return normalized;
+				};
+
+				const setSidebarDom = (open) => {
+					root.dataset.sidebarOpen = open ? '1' : '0';
+				};
+
+				// 先写根节点属性，保证首屏和切页首帧样式稳定，不出现“先深后浅/先开后关”闪动。
+				const initialTheme = setThemeDom(readTheme());
+				const initialSidebar =
+					readSidebarState() ?? document.querySelector('[data-sidebar]')?.dataset.open === '1';
+				setSidebarDom(Boolean(initialSidebar));
+				writeStorage(themeKey, initialTheme);
+				writeStorage(sidebarKey, initialSidebar ? '1' : '0');
+
+				const state = {
+					theme: initialTheme,
+					sidebarOpen: Boolean(initialSidebar),
+				};
+
+				const syncThemeLabel = () => {
+					document.querySelectorAll('[data-theme-label]').forEach((el) => {
+						el.textContent = state.theme === 'dark' ? '深色' : '浅色';
+					});
+				};
+
+				const syncSidebarDom = () => {
+					document.querySelectorAll('[data-sidebar]').forEach((el) => {
+						el.dataset.open = state.sidebarOpen ? '1' : '0';
+						el.setAttribute('aria-hidden', state.sidebarOpen ? 'false' : 'true');
+					});
+				};
+
+				const syncControls = () => {
+					setThemeDom(state.theme);
+					setSidebarDom(state.sidebarOpen);
+					syncThemeLabel();
+					syncSidebarDom();
+				};
+
+				const setTheme = (theme, persist = true) => {
+					state.theme = setThemeDom(theme);
+					syncThemeLabel();
+					if (persist) writeStorage(themeKey, state.theme);
+					window.dispatchEvent(new CustomEvent('site:theme-change', { detail: { theme: state.theme } }));
+				};
+
+				const setSidebar = (open, persist = true) => {
+					state.sidebarOpen = Boolean(open);
+					setSidebarDom(state.sidebarOpen);
+					syncSidebarDom();
+					if (persist) writeStorage(sidebarKey, state.sidebarOpen ? '1' : '0');
+				};
+
+				if (!window.__SITE_UI_STATE_BINDED__) {
+					window.__SITE_UI_STATE_BINDED__ = true;
+					document.addEventListener('click', (event) => {
+						const target = event.target;
+						if (!(target instanceof Element)) return;
+						if (target.closest('[data-theme-toggle]')) {
+							setTheme(state.theme === 'dark' ? 'light' : 'dark');
+							return;
+						}
+						if (target.closest('[data-sidebar-launcher]')) {
+							setSidebar(true);
+							return;
+						}
+						if (target.closest('[data-sidebar-close]')) {
+							setSidebar(false);
+						}
+					});
+
+					window.addEventListener('keydown', (event) => {
+						if (event.key === 'Escape') setSidebar(false);
+					});
+
+					document.addEventListener('astro:before-swap', (event) => {
+						const nextDocument = event?.newDocument || event?.detail?.newDocument;
+						if (!nextDocument?.documentElement) return;
+						nextDocument.documentElement.dataset.theme = state.theme;
+						nextDocument.documentElement.dataset.sidebarOpen = state.sidebarOpen ? '1' : '0';
+					});
+
+					document.addEventListener('astro:page-load', syncControls);
+				}
+
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', syncControls, { once: true });
+				} else {
+					syncControls();
+				}
+
+				window.__SITE_UI_STATE__ = {
+					getTheme: () => state.theme,
+					setTheme,
+					getSidebarOpen: () => state.sidebarOpen,
+					setSidebarOpen: setSidebar,
+					syncControls,
+				};
 			})();
 		</script>
 		<script is:inline define:vars={{ analyticsBaseUrl }}>

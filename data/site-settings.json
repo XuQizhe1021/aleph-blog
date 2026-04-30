@@ -1,18 +1,18 @@
 {
   "version": 1,
-  "savedAt": "",
-  "publishedAt": "",
+  "savedAt": "2026-04-30T11:41:38.348Z",
+  "publishedAt": "2026-04-30T11:41:38.357Z",
   "site_features": {
     "visual": {
       "dynamicFooterGreeting": true,
       "festivalEffect": false,
-      "customCursor": false,
-      "viewTransitions": false
+      "customCursor": true,
+      "viewTransitions": true
     },
     "content": {
       "tocEnhanced": true,
       "codeCopy": true,
-      "mermaid": false
+      "mermaid": true
     },
     "tools": {
       "sidebar": true,
@@ -21,7 +21,7 @@
       "timeMachine": true
     },
     "social": {
-      "giscus": false,
+      "giscus": true,
       "linkCard": true
     }
   },

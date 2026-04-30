@@ -29,22 +29,23 @@ const texts = settings.site_texts;
 	(() => {
 		if (settings?.site_features?.visual?.dynamicFooterGreeting) {
 			const text = settings.site_texts || {};
-			const tweaks = settings.site_theme_tweaks || {};
-			const greetingByHour = (hour) => {
-				if (hour < Number(tweaks.greetingMorningEndHour ?? 11))
+			const greetingByTime = (date) => {
+				const hour = date.getHours();
+				const minute = date.getMinutes();
+				const total = hour * 60 + minute;
+				// 时间段规则：
+				// 04:01-11:00 早上，11:01-13:00 中午，13:01-19:00 下午，其余为晚上。
+				if (total >= 241 && total <= 660)
 					return text.greetingMorning || '早上好，祝你今天高效顺利。';
-				if (hour < Number(tweaks.greetingNoonEndHour ?? 14))
+				if (total >= 661 && total <= 780)
 					return text.greetingNoon || '中午好，记得休息一下。';
-				if (hour < Number(tweaks.greetingAfternoonEndHour ?? 18))
+				if (total >= 781 && total <= 1140)
 					return text.greetingAfternoon || '下午好，继续推进你的目标。';
-				if (hour < Number(tweaks.greetingEveningEndHour ?? 23))
-					return text.greetingEvening || '晚上好，欢迎来这里放松一下。';
-				return text.greetingNight || '夜深了，注意休息。';
+				return text.greetingEvening || text.greetingNight || '晚上好，欢迎来这里放松一下。';
 			};
 			const syncGreeting = () => {
 				// 使用访问者本地时间，避免服务端/构建机时区导致问候语错误。
-				const hour = new Date().getHours();
-				const greeting = greetingByHour(hour);
+				const greeting = greetingByTime(new Date());
 				document.querySelectorAll('[data-site-greeting]').forEach((el) => {
 					el.textContent = greeting;
 				});
@@ -100,10 +101,20 @@ const texts = settings.site_texts;
 </script>
 
 <style>
+	:global(.app-main) {
+		/* 固定底栏后给正文预留空间，避免最后一屏内容被遮挡。 */
+		padding-bottom: 94px;
+	}
+
 	.site-footer {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
 		border-top: 1px solid var(--border);
 		background: color-mix(in oklab, var(--panel-strong), transparent 30%);
 		backdrop-filter: blur(16px);
+		z-index: 98;
 	}
 
 	.inner {
@@ -126,4 +137,3 @@ const texts = settings.site_texts;
 	}
 
 </style>
-

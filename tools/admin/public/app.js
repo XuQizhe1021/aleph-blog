@@ -24,6 +24,13 @@ const $modalTitle = $('modal-title');
 const $modalBody = $('modal-body');
 const $modalActions = $('modal-actions');
 const $startList = $('start-list');
+const $settingsMeta = $('settings-meta');
+const $settingsPreview = $('settings-preview');
+const $settingsSave = $('settings-save');
+const $settingsPublish = $('settings-publish');
+const $settingsFeatures = $('settings-features');
+const $settingsTexts = $('settings-texts');
+const $settingsIntegrations = $('settings-integrations');
 
 let posts = [];
 let activeSlug = '';
@@ -32,9 +39,32 @@ let pendingUploadFile = null;
 let pendingRewardFile = null;
 let pendingStartFile = null;
 let startImages = [];
+let settingsDraft = null;
+let settingsMeta = null;
+let settingsActiveTab = 'features';
 
 const baseUrl = (path) => `${path}`;
 const formatDate = (s) => (s ? new Date(s).toLocaleDateString('zh-CN') : '');
+const formatDateTime = (s) => (s ? new Date(s).toLocaleString('zh-CN') : '—');
+
+function clone(value) {
+	return JSON.parse(JSON.stringify(value));
+}
+
+function getByPath(obj, path) {
+	return path.split('.').reduce((acc, key) => (acc == null ? undefined : acc[key]), obj);
+}
+
+function setByPath(obj, path, value) {
+	const parts = path.split('.');
+	let cursor = obj;
+	for (let i = 0; i < parts.length - 1; i++) {
+		const key = parts[i];
+		if (!cursor[key] || typeof cursor[key] !== 'object') cursor[key] = {};
+		cursor = cursor[key];
+	}
+	cursor[parts[parts.length - 1]] = value;
+}
 
 function openModal({ title, bodyHtml, actionsHtml }) {
 	if ($modalTitle) $modalTitle.textContent = title || '';
@@ -131,6 +161,201 @@ function renderStartAssets() {
 			`
 		)
 		.join('');
+}
+
+function updateSettingsMeta() {
+	if (!$settingsMeta || !settingsDraft) return;
+	$settingsMeta.textContent = `保存时间：${formatDateTime(settingsDraft.savedAt)} · 生效时间：${formatDateTime(settingsDraft.publishedAt)}`;
+}
+
+function renderFeatureRows(groupTitle, rows) {
+	return `
+		<div class="settings-group">
+			<div class="settings-group-title">${groupTitle}</div>
+			${rows
+				.map(
+					(item) => `
+				<label class="settings-row">
+					<label class="settings-switch">
+						<input type="checkbox" data-settings-path="${item.key}" ${getByPath(settingsDraft, item.key) ? 'checked' : ''} />
+						<span>${item.key}</span>
+					</label>
+					<div class="hint">默认值：${String(item.defaultValue)}；回滚：${item.rollback}</div>
+				</label>
+			`
+				)
+				.join('')}
+		</div>
+	`;
+}
+
+function renderSettingsFeatures() {
+	if (!$settingsFeatures || !settingsDraft || !settingsMeta) return;
+	const groups = ['视觉微调', '内容增强', '实用工具', '社交互动'].map((name) => ({
+		name,
+		rows: settingsMeta.site_features.filter((item) => item.category === name),
+	}));
+	$settingsFeatures.innerHTML = groups.map((g) => renderFeatureRows(g.name, g.rows)).join('');
+}
+
+function renderSettingsTexts() {
+	if (!$settingsTexts || !settingsDraft) return;
+	const paths = [
+		'site_texts.footerSignature',
+		'site_texts.greetingMorning',
+		'site_texts.greetingNoon',
+		'site_texts.greetingAfternoon',
+		'site_texts.greetingEvening',
+		'site_texts.greetingNight',
+		'site_texts.copyCode',
+		'site_texts.copySuccess',
+		'site_texts.copyFailed',
+		'site_texts.mermaidFallback',
+		'site_texts.sidebarTitle',
+		'site_texts.sidebarStatusLabel',
+		'site_texts.sidebarActivityLabel',
+		'site_texts.sidebarStatusValue',
+		'site_texts.sidebarActivityHint',
+		'site_texts.randomPostLabel',
+		'site_texts.notFoundRandomLabel',
+		'site_texts.linksPageTitle',
+		'site_texts.linksPageIntro',
+	];
+	$settingsTexts.innerHTML = `
+		<div class="settings-group">
+			<div class="settings-group-title">文案配置</div>
+			${paths
+				.map((path) => {
+					const value = getByPath(settingsDraft, path) ?? '';
+					const isLong = /Signature|Intro|Hint/.test(path);
+					return `
+						<label class="settings-row">
+							<div class="label">${path}</div>
+							${isLong ? `<textarea class="textarea" data-settings-path="${path}">${value}</textarea>` : `<input class="input" data-settings-path="${path}" value="${value.replaceAll('"', '&quot;')}" />`}
+						</label>
+					`;
+				})
+				.join('')}
+		</div>
+		<div class="settings-group">
+			<div class="settings-group-title">视觉参数</div>
+			<label class="settings-row"><div class="label">site_theme_tweaks.viewTransitionDurationMs</div><input class="input" type="number" data-settings-path="site_theme_tweaks.viewTransitionDurationMs" value="${getByPath(settingsDraft, 'site_theme_tweaks.viewTransitionDurationMs')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.viewTransitionEasing</div><input class="input" data-settings-path="site_theme_tweaks.viewTransitionEasing" value="${getByPath(settingsDraft, 'site_theme_tweaks.viewTransitionEasing')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.cursorLight</div><input class="input" data-settings-path="site_theme_tweaks.cursorLight" value="${getByPath(settingsDraft, 'site_theme_tweaks.cursorLight')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.cursorDark</div><input class="input" data-settings-path="site_theme_tweaks.cursorDark" value="${getByPath(settingsDraft, 'site_theme_tweaks.cursorDark')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.greetingMorningEndHour</div><input class="input" type="number" data-settings-path="site_theme_tweaks.greetingMorningEndHour" value="${getByPath(settingsDraft, 'site_theme_tweaks.greetingMorningEndHour')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.greetingNoonEndHour</div><input class="input" type="number" data-settings-path="site_theme_tweaks.greetingNoonEndHour" value="${getByPath(settingsDraft, 'site_theme_tweaks.greetingNoonEndHour')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.greetingAfternoonEndHour</div><input class="input" type="number" data-settings-path="site_theme_tweaks.greetingAfternoonEndHour" value="${getByPath(settingsDraft, 'site_theme_tweaks.greetingAfternoonEndHour')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.greetingEveningEndHour</div><input class="input" type="number" data-settings-path="site_theme_tweaks.greetingEveningEndHour" value="${getByPath(settingsDraft, 'site_theme_tweaks.greetingEveningEndHour')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.festivalStartDate</div><input class="input" data-settings-path="site_theme_tweaks.festivalStartDate" value="${getByPath(settingsDraft, 'site_theme_tweaks.festivalStartDate')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.festivalEndDate</div><input class="input" data-settings-path="site_theme_tweaks.festivalEndDate" value="${getByPath(settingsDraft, 'site_theme_tweaks.festivalEndDate')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.festivalDurationMs</div><input class="input" type="number" data-settings-path="site_theme_tweaks.festivalDurationMs" value="${getByPath(settingsDraft, 'site_theme_tweaks.festivalDurationMs')}" /></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.tocActiveOffset</div><input class="input" type="number" data-settings-path="site_theme_tweaks.tocActiveOffset" value="${getByPath(settingsDraft, 'site_theme_tweaks.tocActiveOffset')}" /></label>
+			<label class="settings-switch"><input type="checkbox" data-settings-path="site_theme_tweaks.sidebarDefaultCollapsed" ${getByPath(settingsDraft, 'site_theme_tweaks.sidebarDefaultCollapsed') ? 'checked' : ''} /><span>site_theme_tweaks.sidebarDefaultCollapsed</span></label>
+			<label class="settings-row"><div class="label">site_theme_tweaks.uptimeStartAt</div><input class="input" data-settings-path="site_theme_tweaks.uptimeStartAt" value="${getByPath(settingsDraft, 'site_theme_tweaks.uptimeStartAt')}" /></label>
+		</div>
+	`;
+}
+
+function renderSettingsIntegrations() {
+	if (!$settingsIntegrations || !settingsDraft) return;
+	const linksRows = (getByPath(settingsDraft, 'site_integrations.links') || [])
+		.map(
+			(item, idx) => `
+		<div class="settings-group">
+			<div class="settings-group-title">链接项 ${idx + 1}</div>
+			<label class="settings-row"><div class="label">id</div><input class="input" data-settings-path="site_integrations.links.${idx}.id" value="${item.id}" /></label>
+			<label class="settings-row"><div class="label">label</div><input class="input" data-settings-path="site_integrations.links.${idx}.label" value="${item.label}" /></label>
+			<label class="settings-row"><div class="label">url</div><input class="input" data-settings-path="site_integrations.links.${idx}.url" value="${item.url}" /></label>
+			<label class="settings-row"><div class="label">icon</div><input class="input" data-settings-path="site_integrations.links.${idx}.icon" value="${item.icon}" /></label>
+			<label class="settings-row"><div class="label">order</div><input class="input" type="number" data-settings-path="site_integrations.links.${idx}.order" value="${item.order}" /></label>
+		</div>`
+		)
+		.join('');
+	$settingsIntegrations.innerHTML = `
+		<div class="settings-group">
+			<div class="settings-group-title">Giscus 评论</div>
+			<label class="settings-row"><div class="label">site_integrations.giscus.repo</div><input class="input" data-settings-path="site_integrations.giscus.repo" value="${getByPath(settingsDraft, 'site_integrations.giscus.repo')}" /></label>
+			<label class="settings-row"><div class="label">site_integrations.giscus.repoId</div><input class="input" data-settings-path="site_integrations.giscus.repoId" value="${getByPath(settingsDraft, 'site_integrations.giscus.repoId')}" /></label>
+			<label class="settings-row"><div class="label">site_integrations.giscus.category</div><input class="input" data-settings-path="site_integrations.giscus.category" value="${getByPath(settingsDraft, 'site_integrations.giscus.category')}" /></label>
+			<label class="settings-row"><div class="label">site_integrations.giscus.categoryId</div><input class="input" data-settings-path="site_integrations.giscus.categoryId" value="${getByPath(settingsDraft, 'site_integrations.giscus.categoryId')}" /></label>
+			<label class="settings-row"><div class="label">site_integrations.giscus.mapping</div><select class="select" data-settings-path="site_integrations.giscus.mapping"><option value="pathname">pathname</option><option value="url">url</option><option value="title">title</option><option value="og:title">og:title</option><option value="specific">specific</option><option value="number">number</option></select></label>
+			<label class="settings-row"><div class="label">site_integrations.giscus.term</div><input class="input" data-settings-path="site_integrations.giscus.term" value="${getByPath(settingsDraft, 'site_integrations.giscus.term')}" /></label>
+			<label class="settings-row"><div class="label">site_integrations.giscus.lang</div><input class="input" data-settings-path="site_integrations.giscus.lang" value="${getByPath(settingsDraft, 'site_integrations.giscus.lang')}" /></label>
+			<label class="settings-switch"><input type="checkbox" data-settings-path="site_integrations.giscus.enableOnPosts" ${getByPath(settingsDraft, 'site_integrations.giscus.enableOnPosts') ? 'checked' : ''} /><span>文章页启用评论</span></label>
+			<label class="settings-switch"><input type="checkbox" data-settings-path="site_integrations.giscus.enableOnPages" ${getByPath(settingsDraft, 'site_integrations.giscus.enableOnPages') ? 'checked' : ''} /><span>普通页面启用评论</span></label>
+		</div>
+		${linksRows}
+	`;
+	const mappingSelect = $settingsIntegrations.querySelector('select[data-settings-path="site_integrations.giscus.mapping"]');
+	if (mappingSelect) mappingSelect.value = getByPath(settingsDraft, 'site_integrations.giscus.mapping');
+}
+
+function syncInputToDraft(target) {
+	const path = target.getAttribute('data-settings-path');
+	if (!path || !settingsDraft) return;
+	if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+		setByPath(settingsDraft, path, target.checked);
+		return;
+	}
+	if (target instanceof HTMLInputElement && target.type === 'number') {
+		setByPath(settingsDraft, path, Number(target.value || 0));
+		return;
+	}
+	if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+		setByPath(settingsDraft, path, target.value);
+	}
+}
+
+function showSettingsTab(tab) {
+	settingsActiveTab = tab;
+	document.querySelectorAll('.settings-tab').forEach((el) => {
+		el.classList.toggle('active', el.getAttribute('data-settings-tab') === tab);
+	});
+	$settingsFeatures && ($settingsFeatures.hidden = tab !== 'features');
+	$settingsTexts && ($settingsTexts.hidden = tab !== 'texts');
+	$settingsIntegrations && ($settingsIntegrations.hidden = tab !== 'integrations');
+}
+
+function renderSettingsAll() {
+	renderSettingsFeatures();
+	renderSettingsTexts();
+	renderSettingsIntegrations();
+	updateSettingsMeta();
+	showSettingsTab(settingsActiveTab);
+}
+
+async function loadSiteSettings() {
+	const resp = await fetch(baseUrl('/api/site-settings'));
+	const data = await resp.json();
+	if (!resp.ok) throw new Error(data.error || 'load_site_settings_failed');
+	settingsDraft = clone(data.settings);
+	settingsMeta = data.meta || null;
+	renderSettingsAll();
+}
+
+async function saveSiteSettings() {
+	const resp = await fetch(baseUrl('/api/site-settings/save'), {
+		method: 'PUT',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ settings: settingsDraft }),
+	});
+	const data = await resp.json();
+	if (!resp.ok) throw new Error(data.error || 'save_site_settings_failed');
+	settingsDraft = clone(data.settings);
+	renderSettingsAll();
+}
+
+async function publishSiteSettings() {
+	const resp = await fetch(baseUrl('/api/site-settings/publish'), {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({}),
+	});
+	const data = await resp.json();
+	if (!resp.ok) throw new Error(data.error || 'publish_site_settings_failed');
+	settingsDraft = clone(data.settings);
+	renderSettingsAll();
 }
 
 async function loadStartAssets() {
@@ -467,6 +692,52 @@ $startList?.addEventListener('click', async (ev) => {
 	}
 });
 
+document.querySelectorAll('.settings-tab').forEach((btn) => {
+	btn.addEventListener('click', () => {
+		const next = btn.getAttribute('data-settings-tab');
+		if (!next) return;
+		showSettingsTab(next);
+	});
+});
+
+[$settingsFeatures, $settingsTexts, $settingsIntegrations].forEach((el) => {
+	el?.addEventListener('input', (ev) => {
+		syncInputToDraft(ev.target);
+	});
+	el?.addEventListener('change', (ev) => {
+		syncInputToDraft(ev.target);
+	});
+});
+
+$settingsPreview?.addEventListener('click', () => {
+	if (!settingsDraft) return;
+	openModal({
+		title: '配置预览',
+		bodyHtml: `<pre class="code">${JSON.stringify(settingsDraft, null, 2)}</pre>`,
+		actionsHtml: `<button class="btn" id="settings-preview-close" type="button">关闭</button>`,
+	});
+	$('settings-preview-close')?.addEventListener('click', () => closeModal());
+});
+
+$settingsSave?.addEventListener('click', async () => {
+	try {
+		await saveSiteSettings();
+		alert('配置草稿已保存');
+	} catch (e) {
+		alert(String(e?.message || e));
+	}
+});
+
+$settingsPublish?.addEventListener('click', async () => {
+	try {
+		await saveSiteSettings();
+		await publishSiteSettings();
+		alert('配置已发布，生效时间已记录。若为静态站点，请配合发布流程推送构建。');
+	} catch (e) {
+		alert(String(e?.message || e));
+	}
+});
+
 $delete?.addEventListener('click', async () => {
 	if (!activeSlug) return;
 	const ok = confirm(`确认删除：${activeSlug} ？`);
@@ -581,4 +852,4 @@ $manageCategories?.addEventListener('click', async () => {
 	});
 });
 
-await Promise.all([loadPosts(), loadStartAssets()]);
+await Promise.all([loadPosts(), loadStartAssets(), loadSiteSettings()]);

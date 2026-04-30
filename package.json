@@ -8,6 +8,7 @@
     "admin": "node tools/admin/server.mjs",
     "build": "astro build",
     "preview": "astro preview",
+    "test": "tsx --test tests/**/*.test.ts",
     "typecheck": "astro check",
     "lint": "astro check",
     "astro": "astro"
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.10",
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "tsx": "^4.20.6"
   }
 }

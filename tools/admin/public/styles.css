@@ -333,6 +333,54 @@ a {
 	gap: 12px;
 }
 
+.settings-center {
+	margin-top: 14px;
+	padding: 14px;
+	display: grid;
+	gap: 12px;
+}
+
+.settings-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.settings-tab.active {
+	border-color: color-mix(in oklab, var(--accent), var(--border) 10%);
+	box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 86%);
+}
+
+.settings-panel {
+	display: grid;
+	gap: 12px;
+}
+
+.settings-group {
+	padding: 12px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: color-mix(in oklab, var(--panel-strong), transparent 20%);
+	display: grid;
+	gap: 10px;
+}
+
+.settings-group-title {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.settings-row {
+	display: grid;
+	gap: 8px;
+}
+
+.settings-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
 .start-list {
 	display: grid;
 	gap: 10px;

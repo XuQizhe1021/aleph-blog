@@ -1,0 +1,70 @@
+---
+import type { SiteSettings } from '../config/site-settings';
+
+type Props = {
+	settings: SiteSettings;
+};
+
+const { settings } = Astro.props;
+const giscus = settings.site_integrations.giscus;
+---
+
+<section class="giscus-wrap panel">
+	<div class="muted">评论区</div>
+	<div id="giscus-thread"></div>
+</section>
+
+<script is:inline define:vars={{ giscus }}>
+	(() => {
+		const container = document.getElementById('giscus-thread');
+		if (!container) return;
+		const script = document.createElement('script');
+		script.src = 'https://giscus.app/client.js';
+		script.async = true;
+		script.crossOrigin = 'anonymous';
+		script.setAttribute('data-repo', giscus.repo);
+		script.setAttribute('data-repo-id', giscus.repoId);
+		script.setAttribute('data-category', giscus.category);
+		script.setAttribute('data-category-id', giscus.categoryId);
+		script.setAttribute('data-mapping', giscus.mapping);
+		if (giscus.term) script.setAttribute('data-term', giscus.term);
+		script.setAttribute('data-strict', '0');
+		script.setAttribute('data-reactions-enabled', giscus.reactionsEnabled);
+		script.setAttribute('data-emit-metadata', '0');
+		script.setAttribute('data-input-position', giscus.inputPosition);
+		script.setAttribute('data-theme', document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+		script.setAttribute('data-lang', giscus.lang);
+		script.setAttribute('data-loading', giscus.loading);
+		container.appendChild(script);
+
+		// 主题切换后通知 giscus 同步主题，避免暗色模式割裂。
+		const observer = new MutationObserver(() => {
+			const iframe = document.querySelector('iframe.giscus-frame');
+			if (!(iframe instanceof HTMLIFrameElement)) return;
+			iframe.contentWindow?.postMessage(
+				{
+					giscus: {
+						setConfig: {
+							theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
+						},
+					},
+				},
+				'https://giscus.app'
+			);
+		});
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-theme'],
+		});
+	})();
+</script>
+
+<style>
+	.giscus-wrap {
+		margin-top: 14px;
+		padding: 16px;
+		display: grid;
+		gap: 10px;
+	}
+</style>
+

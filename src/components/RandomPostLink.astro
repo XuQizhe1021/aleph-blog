@@ -1,0 +1,24 @@
+---
+import { getPublicPosts } from '../utils/blog';
+import { pickRandomPost } from '../utils/random-post';
+import { withBase } from '../utils/paths';
+import { getSiteSettings } from '../config/site-settings';
+
+type Props = {
+	label?: string;
+	className?: string;
+};
+
+const { label, className = '' } = Astro.props;
+const posts = await getPublicPosts();
+const settings = await getSiteSettings();
+const picked = pickRandomPost(posts.map((p) => ({ slug: p.slug, title: p.data.title })));
+const text = label || settings.site_texts.randomPostLabel;
+---
+
+{
+	picked ? (
+		<a class={className} href={withBase(`/posts/${picked.slug}`)}>{text}</a>
+	) : null
+}
+

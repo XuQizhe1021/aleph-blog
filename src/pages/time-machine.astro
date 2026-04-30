@@ -1,0 +1,111 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getPublicPosts } from '../utils/blog';
+import { withBase } from '../utils/paths';
+import { getSiteSettings } from '../config/site-settings';
+
+const settings = await getSiteSettings();
+const posts = await getPublicPosts();
+const rows = posts.map((post) => ({
+	slug: post.slug,
+	title: post.data.title,
+	date: post.data.pubDate.toISOString(),
+	category: post.data.categories?.[0] ?? '未分类',
+}));
+---
+
+<Layout title="时光机">
+	<section class="panel tm">
+		<div class="head">
+			<h1>时光机</h1>
+			<div class="muted">按时间轴浏览文章</div>
+		</div>
+		{
+			settings.site_features.tools.timeMachine ? (
+				<div class="timeline" id="timeline" data-rows={JSON.stringify(rows)}></div>
+			) : (
+				<div class="muted">该功能已在后台关闭。</div>
+			)
+		}
+	</section>
+
+	<script is:inline define:vars={{ base: withBase('/posts') }}>
+		(() => {
+			const root = document.getElementById('timeline');
+			if (!(root instanceof HTMLElement)) return;
+			const rows = JSON.parse(root.dataset.rows || '[]');
+			let page = 0;
+			let pageSize = 12;
+			const render = () => {
+				const start = page * pageSize;
+				const sliced = rows.slice(start, start + pageSize);
+				root.innerHTML = `
+					${sliced
+						.map(
+							(item) => `
+						<a class="item panel" href="${base}/${encodeURIComponent(item.slug)}">
+							<div class="title">${item.title}</div>
+							<div class="muted">${new Date(item.date).toLocaleDateString('zh-CN')} · ${item.category}</div>
+						</a>`
+						)
+						.join('')}
+					<div class="pager">
+						<button class="btn" type="button" data-prev ${page <= 0 ? 'disabled' : ''}>上一页</button>
+						<div class="muted">${page + 1} / ${Math.max(1, Math.ceil(rows.length / pageSize))}</div>
+						<button class="btn" type="button" data-next ${start + pageSize >= rows.length ? 'disabled' : ''}>下一页</button>
+					</div>
+				`;
+				root.querySelector('[data-prev]')?.addEventListener('click', () => {
+					page = Math.max(0, page - 1);
+					render();
+				});
+				root.querySelector('[data-next]')?.addEventListener('click', () => {
+					page += 1;
+					render();
+				});
+			};
+			render();
+		})();
+	</script>
+</Layout>
+
+<style>
+	.tm {
+		padding: 18px;
+		display: grid;
+		gap: 12px;
+	}
+
+	.head {
+		display: grid;
+		gap: 6px;
+	}
+
+	h1 {
+		margin: 0;
+	}
+
+	.timeline {
+		display: grid;
+		gap: 10px;
+	}
+
+	.item {
+		padding: 14px;
+		display: grid;
+		gap: 6px;
+		text-decoration: none;
+	}
+
+	.title {
+		font-weight: 700;
+	}
+
+	.pager {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+</style>
+

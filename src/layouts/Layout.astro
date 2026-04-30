@@ -2,10 +2,13 @@
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import RewardPanel from '../components/RewardPanel.astro';
+import SidebarWidgets from '../components/SidebarWidgets.astro';
 import { siteConfig } from '../site.config';
 import '../styles/global.css';
 import 'katex/dist/katex.min.css';
 import { withBase } from '../utils/paths';
+import { ClientRouter } from 'astro:transitions';
+import { getSiteSettings } from '../config/site-settings';
 
 type Props = {
 	title?: string;
@@ -13,10 +16,13 @@ type Props = {
 };
 
 const { title, description } = Astro.props;
+const siteSettings = await getSiteSettings();
 const pageTitle = title ? `${title} · ${siteConfig.title}` : siteConfig.title;
 const pageDescription = description ?? siteConfig.description;
 const analyticsBaseUrl = withBase('/');
 const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : Astro.url.toString();
+const vtDuration = `${siteSettings.site_theme_tweaks.viewTransitionDurationMs}ms`;
+const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 ---
 
 <!doctype html>
@@ -29,6 +35,19 @@ const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).toStri
 		<meta name="generator" content={Astro.generator} />
 		<title>{pageTitle}</title>
 		<meta name="description" content={pageDescription} />
+		{siteSettings.site_features.visual.viewTransitions ? <ClientRouter /> : null}
+		<style is:inline>
+			:root {
+				--vt-duration: {vtDuration};
+				--vt-easing: {vtEasing};
+			}
+
+			::view-transition-old(root),
+			::view-transition-new(root) {
+				animation-duration: var(--vt-duration);
+				animation-timing-function: var(--vt-easing);
+			}
+		</style>
 		<script is:inline>
 			(() => {
 				const key = 'theme';
@@ -70,6 +89,107 @@ const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).toStri
 					.catch(() => setViews('—'));
 			})();
 		</script>
+		<script is:inline define:vars={{ siteSettings }}>
+			(() => {
+				// 统一向客户端暴露配置，避免各组件分散硬编码。
+				window.__SITE_SETTINGS__ = siteSettings;
+
+				// 浏览器 API 降级保护：仅在客户端和开关开启时执行增强逻辑。
+				const cfg = siteSettings;
+				const text = cfg.site_texts || {};
+				const features = cfg.site_features || {};
+				const tweaks = cfg.site_theme_tweaks || {};
+
+				const applyCursor = () => {
+					if (!features?.visual?.customCursor) return;
+					const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+					document.body.style.cursor = theme === 'dark' ? tweaks.cursorDark : tweaks.cursorLight;
+				};
+				applyCursor();
+				new MutationObserver(applyCursor).observe(document.documentElement, {
+					attributes: true,
+					attributeFilter: ['data-theme'],
+				});
+
+				const enableCodeCopy = () => {
+					if (!features?.content?.codeCopy) return;
+					document.querySelectorAll('pre').forEach((pre) => {
+						if (pre.querySelector('.code-copy-btn')) return;
+						const code = pre.querySelector('code');
+						if (!code) return;
+						const btn = document.createElement('button');
+						btn.type = 'button';
+						btn.className = 'code-copy-btn';
+						btn.textContent = text.copyCode || '复制';
+						btn.addEventListener('click', async () => {
+							try {
+								await navigator.clipboard.writeText(code.textContent || '');
+								btn.textContent = text.copySuccess || '已复制';
+							} catch {
+								btn.textContent = text.copyFailed || '复制失败';
+							}
+							window.setTimeout(() => {
+								btn.textContent = text.copyCode || '复制';
+							}, 1400);
+						});
+						pre.appendChild(btn);
+					});
+				};
+				enableCodeCopy();
+
+				const enableMermaid = async () => {
+					if (!features?.content?.mermaid) return;
+					const nodes = Array.from(document.querySelectorAll('pre > code.language-mermaid'));
+					if (!nodes.length) return;
+					try {
+						const mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+						mermaid.default.initialize({
+							startOnLoad: false,
+							theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',
+							securityLevel: 'strict',
+						});
+						for (const code of nodes) {
+							const pre = code.closest('pre');
+							if (!pre) continue;
+							const box = document.createElement('div');
+							box.className = 'mermaid';
+							box.textContent = code.textContent || '';
+							pre.replaceWith(box);
+						}
+						await mermaid.default.run({
+							nodes: Array.from(document.querySelectorAll('.mermaid')),
+						});
+					} catch {
+						document.querySelectorAll('pre > code.language-mermaid').forEach((code) => {
+							const hint = document.createElement('div');
+							hint.className = 'mermaid-fallback muted';
+							hint.textContent = text.mermaidFallback || '图表渲染失败';
+							code.closest('pre')?.insertAdjacentElement('afterend', hint);
+						});
+					}
+				};
+				enableMermaid();
+
+				const matchDate = (mmdd, today) => {
+					if (!/^\d{2}-\d{2}$/.test(mmdd || '')) return false;
+					return mmdd === today;
+				};
+
+				const showFestival = () => {
+					if (!features?.visual?.festivalEffect) return;
+					const now = new Date();
+					const mmdd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+					const start = tweaks.festivalStartDate;
+					const end = tweaks.festivalEndDate;
+					if (!(matchDate(start, mmdd) || matchDate(end, mmdd))) return;
+					const el = document.createElement('div');
+					el.className = 'festival-effect';
+					document.body.appendChild(el);
+					window.setTimeout(() => el.remove(), Number(tweaks.festivalDurationMs || 1800));
+				};
+				showFestival();
+			})();
+		</script>
 	</head>
 	<body>
 		<div class="app-shell">
@@ -79,6 +199,7 @@ const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).toStri
 			</main>
 			<SiteFooter />
 			<RewardPanel />
+			<SidebarWidgets />
 		</div>
 	</body>
 </html>

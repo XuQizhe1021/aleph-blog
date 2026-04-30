@@ -7,7 +7,7 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 ---
 
 {variant === 'drawer' ? (
-	<section class="toc-drawer panel" aria-label="目录" data-open="0">
+	<section class="toc-drawer panel" aria-label="目录" data-open="0" data-toc-root>
 		<button class="toc-drawer-head" type="button" aria-expanded="false">
 			<span class="toc-title">目录</span>
 			<span class="chev" aria-hidden="true">⌄</span>
@@ -18,7 +18,7 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 					<ul>
 						{visible.map((h) => (
 							<li class={`d${h.depth}`}>
-								<a href={`#${h.slug}`}>{h.text}</a>
+								<a href={`#${h.slug}`} data-toc-link={h.slug}>{h.text}</a>
 							</li>
 						))}
 					</ul>
@@ -60,7 +60,7 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 		</script>
 	</section>
 ) : variant === 'floating' ? (
-	<section class="toc-float" aria-label="目录" data-open="0">
+	<section class="toc-float" aria-label="目录" data-open="0" data-toc-root>
 		<button class="toc-float-btn" type="button" aria-expanded="false">
 			<span class="toc-float-btn-text">目录</span>
 		</button>
@@ -74,7 +74,7 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 					<ul>
 						{visible.map((h) => (
 							<li class={`d${h.depth}`}>
-								<a href={`#${h.slug}`}>{h.text}</a>
+								<a href={`#${h.slug}`} data-toc-link={h.slug}>{h.text}</a>
 							</li>
 						))}
 					</ul>
@@ -109,7 +109,7 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 		</script>
 	</section>
 ) : (
-	<aside class="toc panel" aria-label="目录">
+	<aside class="toc panel" aria-label="目录" data-toc-root>
 		<div class="toc-head">
 			<div class="toc-title">目录</div>
 		</div>
@@ -118,7 +118,7 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 				<ul>
 					{visible.map((h) => (
 						<li class={`d${h.depth}`}>
-							<a href={`#${h.slug}`}>{h.text}</a>
+							<a href={`#${h.slug}`} data-toc-link={h.slug}>{h.text}</a>
 						</li>
 					))}
 				</ul>
@@ -312,6 +312,11 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 		text-decoration-color: color-mix(in oklab, var(--accent), transparent 55%);
 	}
 
+	a.is-active {
+		color: var(--text);
+		font-weight: 650;
+	}
+
 	.d3 {
 		padding-left: 10px;
 	}
@@ -325,3 +330,39 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 		padding: 8px 2px;
 	}
 </style>
+
+<script>
+	import { pickActiveTocHeading } from '../utils/toc-active';
+
+	const run = () => {
+		const settings = (window as any).__SITE_SETTINGS__;
+		if (!settings?.site_features?.content?.tocEnhanced) return;
+		const offset = Number(settings?.site_theme_tweaks?.tocActiveOffset ?? 96);
+		const roots = Array.from(document.querySelectorAll('[data-toc-root]'));
+		if (!roots.length) return;
+
+		const update = () => {
+			const headings = Array.from(document.querySelectorAll<HTMLElement>('.prose h2[id], .prose h3[id], .prose h4[id]'));
+			const active = pickActiveTocHeading(
+				headings.map((el) => ({ id: el.id, top: el.getBoundingClientRect().top })),
+				offset
+			);
+			roots.forEach((root) => {
+				root.querySelectorAll('a[data-toc-link]').forEach((a) => {
+					const target = a.getAttribute('data-toc-link');
+					a.classList.toggle('is-active', target === active);
+				});
+			});
+		};
+
+		update();
+		window.addEventListener('scroll', update, { passive: true });
+		window.addEventListener('resize', update);
+	};
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', run, { once: true });
+	} else {
+		run();
+	}
+</script>

@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "savedAt": "",
+  "publishedAt": "",
+  "site_features": {
+    "visual": {
+      "dynamicFooterGreeting": true,
+      "festivalEffect": false,
+      "customCursor": false,
+      "viewTransitions": false
+    },
+    "content": {
+      "tocEnhanced": true,
+      "codeCopy": true,
+      "mermaid": false
+    },
+    "tools": {
+      "sidebar": true,
+      "siteUptime": true,
+      "randomPost": true,
+      "timeMachine": true
+    },
+    "social": {
+      "giscus": false,
+      "linkCard": true
+    }
+  },
+  "site_texts": {
+    "footerSignature": "谢谢你的阅读，愿你今天也有好状态。",
+    "greetingMorning": "早上好，祝你今天高效顺利。",
+    "greetingNoon": "中午好，记得休息一下。",
+    "greetingAfternoon": "下午好，继续推进你的目标。",
+    "greetingEvening": "晚上好，欢迎来这里放松一下。",
+    "greetingNight": "夜深了，注意休息。",
+    "copyCode": "复制",
+    "copySuccess": "已复制",
+    "copyFailed": "复制失败，请手动复制",
+    "mermaidFallback": "图表渲染失败，已回退为代码块展示。",
+    "sidebarTitle": "侧边栏",
+    "sidebarStatusLabel": "当前状态",
+    "sidebarActivityLabel": "活跃日历",
+    "sidebarStatusValue": "专注开发中",
+    "sidebarActivityHint": "可在后台配置活动数据源或占位文案。",
+    "randomPostLabel": "随机文章",
+    "notFoundRandomLabel": "随便看看一篇文章",
+    "linksPageTitle": "链接与数字名片",
+    "linksPageIntro": "这里整理了常用的社交与联系入口。"
+  },
+  "site_theme_tweaks": {
+    "viewTransitionDurationMs": 260,
+    "viewTransitionEasing": "ease",
+    "cursorLight": "auto",
+    "cursorDark": "auto",
+    "greetingMorningEndHour": 11,
+    "greetingNoonEndHour": 14,
+    "greetingAfternoonEndHour": 18,
+    "greetingEveningEndHour": 23,
+    "festivalStartDate": "12-24",
+    "festivalEndDate": "12-26",
+    "festivalDurationMs": 1800,
+    "sidebarDefaultCollapsed": false,
+    "tocActiveOffset": 96,
+    "uptimeStartAt": "2026-01-01T00:00:00+08:00"
+  },
+  "site_integrations": {
+    "giscus": {
+      "repo": "",
+      "repoId": "",
+      "category": "Announcements",
+      "categoryId": "",
+      "mapping": "pathname",
+      "term": "",
+      "reactionsEnabled": "1",
+      "inputPosition": "bottom",
+      "lang": "zh-CN",
+      "loading": "lazy",
+      "enableOnPosts": true,
+      "enableOnPages": false
+    },
+    "links": [
+      {
+        "id": "github",
+        "label": "GitHub",
+        "url": "https://github.com/",
+        "icon": "github",
+        "order": 1
+      },
+      {
+        "id": "email",
+        "label": "邮箱",
+        "url": "mailto:example@example.com",
+        "icon": "mail",
+        "order": 2
+      },
+      {
+        "id": "rss",
+        "label": "RSS",
+        "url": "/rss.xml",
+        "icon": "rss",
+        "order": 3
+      }
+    ]
+  }
+}

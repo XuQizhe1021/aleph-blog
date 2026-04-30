@@ -1,10 +1,23 @@
 ---
 import { siteConfig } from '../site.config';
 import { withBase } from '../utils/paths';
+import { getSiteSettings } from '../config/site-settings';
 
 const normalizedPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const normalizedHomePath = withBase('/').replace(/\/+$/, '') || '/';
 const isHome = normalizedPath === normalizedHomePath;
+const settings = await getSiteSettings();
+type NavItem = {
+	href: string;
+	label: string;
+};
+const dynamicNav: NavItem[] = [...siteConfig.nav];
+if (settings.site_features.tools.timeMachine) {
+	dynamicNav.push({ href: '/time-machine', label: '时光机' });
+}
+if (settings.site_features.social.linkCard) {
+	dynamicNav.push({ href: '/links', label: '链接' });
+}
 ---
 
 <header class="site-header">
@@ -14,7 +27,7 @@ const isHome = normalizedPath === normalizedHomePath;
 			<span class="brand-text">{siteConfig.title}</span>
 		</a>
 		<nav class="nav" aria-label="主导航">
-			{siteConfig.nav.map((item) => (
+			{dynamicNav.map((item) => (
 				<a class="nav-link" href={withBase(item.href)}>
 					{item.label}
 				</a>
@@ -38,7 +51,7 @@ const isHome = normalizedPath === normalizedHomePath;
 	</div>
 	<div class="nav-drop" id="nav-drawer" aria-hidden="true">
 		<nav class="nav-drop-inner" aria-label="移动端导航">
-			{siteConfig.nav.map((item) => (
+			{dynamicNav.map((item) => (
 				<a class="nav-drop-link" href={withBase(item.href)}>
 					{item.label}
 				</a>

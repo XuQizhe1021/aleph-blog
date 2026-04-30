@@ -1,0 +1,64 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getSiteSettings } from '../config/site-settings';
+
+const settings = await getSiteSettings();
+const links = settings.site_integrations.links.slice().sort((a, b) => a.order - b.order);
+---
+
+<Layout title={settings.site_texts.linksPageTitle}>
+	<section class="panel links">
+		<h1>{settings.site_texts.linksPageTitle}</h1>
+		<p class="muted">{settings.site_texts.linksPageIntro}</p>
+		{
+			settings.site_features.social.linkCard ? (
+				<div class="grid">
+					{links.map((item) => (
+						<a class="panel card" href={item.url} target="_blank" rel="noopener noreferrer">
+							<div class="title">{item.label}</div>
+							<div class="muted">{item.url}</div>
+						</a>
+					))}
+				</div>
+			) : (
+				<div class="muted">该页面已在后台关闭。</div>
+			)
+		}
+	</section>
+</Layout>
+
+<style>
+	.links {
+		padding: 18px;
+		display: grid;
+		gap: 12px;
+	}
+
+	h1 {
+		margin: 0;
+	}
+
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+	}
+
+	.card {
+		padding: 14px;
+		display: grid;
+		gap: 8px;
+		text-decoration: none;
+	}
+
+	.title {
+		font-weight: 700;
+	}
+
+	@media (max-width: 720px) {
+		.grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
+

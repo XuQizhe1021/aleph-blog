@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+import RandomPostLink from '../components/RandomPostLink.astro';
+import { getSiteSettings } from '../config/site-settings';
+import { withBase } from '../utils/paths';
+
+const settings = await getSiteSettings();
+---
+
+<Layout title="页面未找到">
+	<section class="panel not-found">
+		<h1>404</h1>
+		<p class="muted">你访问的页面不存在，可能已被移动或删除。</p>
+		<div class="actions">
+			<a class="btn" href={withBase('/')}>返回首页</a>
+			{
+				settings.site_features.tools.randomPost ? (
+					<RandomPostLink className="btn" label={settings.site_texts.notFoundRandomLabel} />
+				) : null
+			}
+		</div>
+	</section>
+</Layout>
+
+<style>
+	.not-found {
+		padding: 20px;
+		display: grid;
+		gap: 12px;
+	}
+
+	h1 {
+		margin: 0;
+		font-size: 42px;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+</style>
+

@@ -82,6 +82,25 @@
 						</div>
 						<div class="start-list" id="start-list"></div>
 					</div>
+					<div class="panel settings-center">
+						<div class="viewer-head">
+							<div class="viewer-title">站点配置中心</div>
+							<div class="viewer-actions">
+								<button class="btn" id="settings-preview" type="button">预览配置</button>
+								<button class="btn" id="settings-save" type="button">保存草稿</button>
+								<button class="btn" id="settings-publish" type="button">发布生效</button>
+							</div>
+						</div>
+						<div class="muted viewer-sub" id="settings-meta">加载中...</div>
+						<div class="settings-tabs">
+							<button class="btn settings-tab active" type="button" data-settings-tab="features">功能开关</button>
+							<button class="btn settings-tab" type="button" data-settings-tab="texts">文案配置</button>
+							<button class="btn settings-tab" type="button" data-settings-tab="integrations">第三方集成</button>
+						</div>
+						<div class="settings-panel" id="settings-features"></div>
+						<div class="settings-panel" id="settings-texts" hidden></div>
+						<div class="settings-panel" id="settings-integrations" hidden></div>
+					</div>
 				</section>
 			</div>
 		</div>

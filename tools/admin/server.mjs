@@ -18,12 +18,264 @@ const postsDir = path.join(projectRoot, 'src', 'content', 'blog');
 const publicDir = path.join(projectRoot, 'public');
 const startDir = path.join(publicDir, 'start');
 const adminPublicDir = path.join(projectRoot, 'tools', 'admin', 'public');
+const dataDir = path.join(projectRoot, 'data');
+const settingsPath = path.join(dataDir, 'site-settings.json');
 
 await fs.mkdir(postsDir, { recursive: true });
 await fs.mkdir(publicDir, { recursive: true });
 await fs.mkdir(startDir, { recursive: true });
+await fs.mkdir(dataDir, { recursive: true });
 
 const startImageExts = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif']);
+
+const defaultSiteSettings = {
+	version: 1,
+	savedAt: '',
+	publishedAt: '',
+	site_features: {
+		visual: {
+			dynamicFooterGreeting: true,
+			festivalEffect: false,
+			customCursor: false,
+			viewTransitions: false,
+		},
+		content: {
+			tocEnhanced: true,
+			codeCopy: true,
+			mermaid: false,
+		},
+		tools: {
+			sidebar: true,
+			siteUptime: true,
+			randomPost: true,
+			timeMachine: true,
+		},
+		social: {
+			giscus: false,
+			linkCard: true,
+		},
+	},
+	site_texts: {
+		footerSignature: '谢谢你的阅读，愿你今天也有好状态。',
+		greetingMorning: '早上好，祝你今天高效顺利。',
+		greetingNoon: '中午好，记得休息一下。',
+		greetingAfternoon: '下午好，继续推进你的目标。',
+		greetingEvening: '晚上好，欢迎来这里放松一下。',
+		greetingNight: '夜深了，注意休息。',
+		copyCode: '复制',
+		copySuccess: '已复制',
+		copyFailed: '复制失败，请手动复制',
+		mermaidFallback: '图表渲染失败，已回退为代码块展示。',
+		sidebarTitle: '侧边栏',
+		sidebarStatusLabel: '当前状态',
+		sidebarActivityLabel: '活跃日历',
+		sidebarStatusValue: '专注开发中',
+		sidebarActivityHint: '可在后台配置活动数据源或占位文案。',
+		randomPostLabel: '随机文章',
+		notFoundRandomLabel: '随便看看一篇文章',
+		linksPageTitle: '链接与数字名片',
+		linksPageIntro: '这里整理了常用的社交与联系入口。',
+	},
+	site_theme_tweaks: {
+		viewTransitionDurationMs: 260,
+		viewTransitionEasing: 'ease',
+		cursorLight: 'auto',
+		cursorDark: 'auto',
+		greetingMorningEndHour: 11,
+		greetingNoonEndHour: 14,
+		greetingAfternoonEndHour: 18,
+		greetingEveningEndHour: 23,
+		festivalStartDate: '12-24',
+		festivalEndDate: '12-26',
+		festivalDurationMs: 1800,
+		sidebarDefaultCollapsed: false,
+		tocActiveOffset: 96,
+		uptimeStartAt: '2026-01-01T00:00:00+08:00',
+	},
+	site_integrations: {
+		giscus: {
+			repo: '',
+			repoId: '',
+			category: 'Announcements',
+			categoryId: '',
+			mapping: 'pathname',
+			term: '',
+			reactionsEnabled: '1',
+			inputPosition: 'bottom',
+			lang: 'zh-CN',
+			loading: 'lazy',
+			enableOnPosts: true,
+			enableOnPages: false,
+		},
+		links: [
+			{ id: 'github', label: 'GitHub', url: 'https://github.com/', icon: 'github', order: 1 },
+			{ id: 'email', label: '邮箱', url: 'mailto:example@example.com', icon: 'mail', order: 2 },
+			{ id: 'rss', label: 'RSS', url: '/rss.xml', icon: 'rss', order: 3 },
+		],
+	},
+};
+
+const siteSettingsMeta = {
+	site_features: [
+		{
+			category: '视觉微调',
+			key: 'site_features.visual.dynamicFooterGreeting',
+			defaultValue: true,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: 'SiteFooter 动态问候语',
+			rollback: '关闭开关即可回退到静态页脚文案',
+		},
+		{
+			category: '视觉微调',
+			key: 'site_features.visual.festivalEffect',
+			defaultValue: false,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: 'Layout 节日动效覆盖层',
+			rollback: '关闭开关立即停用节日动效',
+		},
+		{
+			category: '视觉微调',
+			key: 'site_features.visual.customCursor',
+			defaultValue: false,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: 'Layout 全局鼠标样式',
+			rollback: '关闭后恢复浏览器默认鼠标',
+		},
+		{
+			category: '视觉微调',
+			key: 'site_features.visual.viewTransitions',
+			defaultValue: false,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: 'Layout Astro ViewTransitions',
+			rollback: '关闭后退回无动画页面切换',
+		},
+		{
+			category: '内容增强',
+			key: 'site_features.content.tocEnhanced',
+			defaultValue: true,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: 'Toc 目录高亮联动',
+			rollback: '关闭后保留静态目录',
+		},
+		{
+			category: '内容增强',
+			key: 'site_features.content.codeCopy',
+			defaultValue: true,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: '代码块复制按钮',
+			rollback: '关闭后隐藏复制按钮',
+		},
+		{
+			category: '内容增强',
+			key: 'site_features.content.mermaid',
+			defaultValue: false,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: 'Markdown Mermaid 渲染',
+			rollback: '关闭后回退到原始代码块',
+		},
+		{
+			category: '实用工具',
+			key: 'site_features.tools.sidebar',
+			defaultValue: true,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: '全站侧边栏系统',
+			rollback: '关闭后不渲染侧边栏',
+		},
+		{
+			category: '实用工具',
+			key: 'site_features.tools.siteUptime',
+			defaultValue: true,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: '页脚运行时长计时器',
+			rollback: '关闭后隐藏计时器',
+		},
+		{
+			category: '实用工具',
+			key: 'site_features.tools.randomPost',
+			defaultValue: true,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: '随机文章入口（页脚/404）',
+			rollback: '关闭后隐藏随机入口',
+		},
+		{
+			category: '实用工具',
+			key: 'site_features.tools.timeMachine',
+			defaultValue: true,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: '时光机页面入口',
+			rollback: '关闭后入口隐藏，页面可保留',
+		},
+		{
+			category: '社交互动',
+			key: 'site_features.social.giscus',
+			defaultValue: false,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: 'Giscus 评论系统',
+			rollback: '关闭后不加载第三方脚本',
+		},
+		{
+			category: '社交互动',
+			key: 'site_features.social.linkCard',
+			defaultValue: true,
+			type: 'boolean',
+			validate: '布尔值',
+			control: 'switch',
+			consume: '链接/数字名片页',
+			rollback: '关闭后页面展示提示态',
+		},
+	],
+	site_texts: [
+		{ key: 'site_texts.footerSignature', type: 'string', control: 'textarea' },
+		{ key: 'site_texts.greetingMorning', type: 'string', control: 'input' },
+		{ key: 'site_texts.greetingNoon', type: 'string', control: 'input' },
+		{ key: 'site_texts.greetingAfternoon', type: 'string', control: 'input' },
+		{ key: 'site_texts.greetingEvening', type: 'string', control: 'input' },
+		{ key: 'site_texts.greetingNight', type: 'string', control: 'input' },
+		{ key: 'site_texts.copyCode', type: 'string', control: 'input' },
+		{ key: 'site_texts.copySuccess', type: 'string', control: 'input' },
+		{ key: 'site_texts.copyFailed', type: 'string', control: 'input' },
+		{ key: 'site_texts.mermaidFallback', type: 'string', control: 'input' },
+	],
+	site_theme_tweaks: [
+		{ key: 'site_theme_tweaks.viewTransitionDurationMs', type: 'number', control: 'number' },
+		{ key: 'site_theme_tweaks.viewTransitionEasing', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.cursorLight', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.cursorDark', type: 'string', control: 'input' },
+		{ key: 'site_theme_tweaks.uptimeStartAt', type: 'string', control: 'datetime-local' },
+	],
+	site_integrations: [
+		{ key: 'site_integrations.giscus.repo', type: 'string', control: 'input' },
+		{ key: 'site_integrations.giscus.repoId', type: 'string', control: 'input' },
+		{ key: 'site_integrations.giscus.category', type: 'string', control: 'input' },
+		{ key: 'site_integrations.giscus.categoryId', type: 'string', control: 'input' },
+		{ key: 'site_integrations.giscus.mapping', type: 'string', control: 'select' },
+		{ key: 'site_integrations.giscus.lang', type: 'string', control: 'input' },
+	],
+};
 
 const md = new MarkdownIt({
 	html: false,
@@ -136,6 +388,201 @@ function runGit(args, cwd) {
 	});
 }
 
+function asBoolean(value, fallback) {
+	return typeof value === 'boolean' ? value : fallback;
+}
+
+function asString(value, fallback) {
+	return typeof value === 'string' ? value : fallback;
+}
+
+function asNumber(value, fallback, min, max) {
+	if (typeof value !== 'number' || Number.isNaN(value)) return fallback;
+	return Math.min(max, Math.max(min, value));
+}
+
+function normalizeSiteSettings(input) {
+	const src = input && typeof input === 'object' ? input : {};
+	const f = src.site_features ?? {};
+	const t = src.site_texts ?? {};
+	const tt = src.site_theme_tweaks ?? {};
+	const i = src.site_integrations ?? {};
+	const giscus = i.giscus ?? {};
+	const links = Array.isArray(i.links) ? i.links : defaultSiteSettings.site_integrations.links;
+
+	return {
+		version: asNumber(src.version, defaultSiteSettings.version, 1, 9999),
+		savedAt: asString(src.savedAt, ''),
+		publishedAt: asString(src.publishedAt, ''),
+		site_features: {
+			visual: {
+				dynamicFooterGreeting: asBoolean(
+					f.visual?.dynamicFooterGreeting,
+					defaultSiteSettings.site_features.visual.dynamicFooterGreeting
+				),
+				festivalEffect: asBoolean(
+					f.visual?.festivalEffect,
+					defaultSiteSettings.site_features.visual.festivalEffect
+				),
+				customCursor: asBoolean(
+					f.visual?.customCursor,
+					defaultSiteSettings.site_features.visual.customCursor
+				),
+				viewTransitions: asBoolean(
+					f.visual?.viewTransitions,
+					defaultSiteSettings.site_features.visual.viewTransitions
+				),
+			},
+			content: {
+				tocEnhanced: asBoolean(
+					f.content?.tocEnhanced,
+					defaultSiteSettings.site_features.content.tocEnhanced
+				),
+				codeCopy: asBoolean(f.content?.codeCopy, defaultSiteSettings.site_features.content.codeCopy),
+				mermaid: asBoolean(f.content?.mermaid, defaultSiteSettings.site_features.content.mermaid),
+			},
+			tools: {
+				sidebar: asBoolean(f.tools?.sidebar, defaultSiteSettings.site_features.tools.sidebar),
+				siteUptime: asBoolean(f.tools?.siteUptime, defaultSiteSettings.site_features.tools.siteUptime),
+				randomPost: asBoolean(f.tools?.randomPost, defaultSiteSettings.site_features.tools.randomPost),
+				timeMachine: asBoolean(f.tools?.timeMachine, defaultSiteSettings.site_features.tools.timeMachine),
+			},
+			social: {
+				giscus: asBoolean(f.social?.giscus, defaultSiteSettings.site_features.social.giscus),
+				linkCard: asBoolean(f.social?.linkCard, defaultSiteSettings.site_features.social.linkCard),
+			},
+		},
+		site_texts: {
+			footerSignature: asString(t.footerSignature, defaultSiteSettings.site_texts.footerSignature),
+			greetingMorning: asString(t.greetingMorning, defaultSiteSettings.site_texts.greetingMorning),
+			greetingNoon: asString(t.greetingNoon, defaultSiteSettings.site_texts.greetingNoon),
+			greetingAfternoon: asString(t.greetingAfternoon, defaultSiteSettings.site_texts.greetingAfternoon),
+			greetingEvening: asString(t.greetingEvening, defaultSiteSettings.site_texts.greetingEvening),
+			greetingNight: asString(t.greetingNight, defaultSiteSettings.site_texts.greetingNight),
+			copyCode: asString(t.copyCode, defaultSiteSettings.site_texts.copyCode),
+			copySuccess: asString(t.copySuccess, defaultSiteSettings.site_texts.copySuccess),
+			copyFailed: asString(t.copyFailed, defaultSiteSettings.site_texts.copyFailed),
+			mermaidFallback: asString(t.mermaidFallback, defaultSiteSettings.site_texts.mermaidFallback),
+			sidebarTitle: asString(t.sidebarTitle, defaultSiteSettings.site_texts.sidebarTitle),
+			sidebarStatusLabel: asString(t.sidebarStatusLabel, defaultSiteSettings.site_texts.sidebarStatusLabel),
+			sidebarActivityLabel: asString(
+				t.sidebarActivityLabel,
+				defaultSiteSettings.site_texts.sidebarActivityLabel
+			),
+			sidebarStatusValue: asString(t.sidebarStatusValue, defaultSiteSettings.site_texts.sidebarStatusValue),
+			sidebarActivityHint: asString(t.sidebarActivityHint, defaultSiteSettings.site_texts.sidebarActivityHint),
+			randomPostLabel: asString(t.randomPostLabel, defaultSiteSettings.site_texts.randomPostLabel),
+			notFoundRandomLabel: asString(
+				t.notFoundRandomLabel,
+				defaultSiteSettings.site_texts.notFoundRandomLabel
+			),
+			linksPageTitle: asString(t.linksPageTitle, defaultSiteSettings.site_texts.linksPageTitle),
+			linksPageIntro: asString(t.linksPageIntro, defaultSiteSettings.site_texts.linksPageIntro),
+		},
+		site_theme_tweaks: {
+			viewTransitionDurationMs: asNumber(
+				tt.viewTransitionDurationMs,
+				defaultSiteSettings.site_theme_tweaks.viewTransitionDurationMs,
+				100,
+				1200
+			),
+			viewTransitionEasing: asString(
+				tt.viewTransitionEasing,
+				defaultSiteSettings.site_theme_tweaks.viewTransitionEasing
+			),
+			cursorLight: asString(tt.cursorLight, defaultSiteSettings.site_theme_tweaks.cursorLight),
+			cursorDark: asString(tt.cursorDark, defaultSiteSettings.site_theme_tweaks.cursorDark),
+			greetingMorningEndHour: asNumber(
+				tt.greetingMorningEndHour,
+				defaultSiteSettings.site_theme_tweaks.greetingMorningEndHour,
+				1,
+				23
+			),
+			greetingNoonEndHour: asNumber(
+				tt.greetingNoonEndHour,
+				defaultSiteSettings.site_theme_tweaks.greetingNoonEndHour,
+				1,
+				23
+			),
+			greetingAfternoonEndHour: asNumber(
+				tt.greetingAfternoonEndHour,
+				defaultSiteSettings.site_theme_tweaks.greetingAfternoonEndHour,
+				1,
+				23
+			),
+			greetingEveningEndHour: asNumber(
+				tt.greetingEveningEndHour,
+				defaultSiteSettings.site_theme_tweaks.greetingEveningEndHour,
+				1,
+				23
+			),
+			festivalStartDate: asString(tt.festivalStartDate, defaultSiteSettings.site_theme_tweaks.festivalStartDate),
+			festivalEndDate: asString(tt.festivalEndDate, defaultSiteSettings.site_theme_tweaks.festivalEndDate),
+			festivalDurationMs: asNumber(
+				tt.festivalDurationMs,
+				defaultSiteSettings.site_theme_tweaks.festivalDurationMs,
+				600,
+				8000
+			),
+			sidebarDefaultCollapsed: asBoolean(
+				tt.sidebarDefaultCollapsed,
+				defaultSiteSettings.site_theme_tweaks.sidebarDefaultCollapsed
+			),
+			tocActiveOffset: asNumber(tt.tocActiveOffset, defaultSiteSettings.site_theme_tweaks.tocActiveOffset, 40, 200),
+			uptimeStartAt: asString(tt.uptimeStartAt, defaultSiteSettings.site_theme_tweaks.uptimeStartAt),
+		},
+		site_integrations: {
+			giscus: {
+				repo: asString(giscus.repo, defaultSiteSettings.site_integrations.giscus.repo),
+				repoId: asString(giscus.repoId, defaultSiteSettings.site_integrations.giscus.repoId),
+				category: asString(giscus.category, defaultSiteSettings.site_integrations.giscus.category),
+				categoryId: asString(giscus.categoryId, defaultSiteSettings.site_integrations.giscus.categoryId),
+				mapping:
+					giscus.mapping === 'url' ||
+					giscus.mapping === 'title' ||
+					giscus.mapping === 'og:title' ||
+					giscus.mapping === 'specific' ||
+					giscus.mapping === 'number'
+						? giscus.mapping
+						: defaultSiteSettings.site_integrations.giscus.mapping,
+				term: asString(giscus.term, defaultSiteSettings.site_integrations.giscus.term),
+				reactionsEnabled:
+					giscus.reactionsEnabled === '0' ? '0' : defaultSiteSettings.site_integrations.giscus.reactionsEnabled,
+				inputPosition:
+					giscus.inputPosition === 'top' ? 'top' : defaultSiteSettings.site_integrations.giscus.inputPosition,
+				lang: asString(giscus.lang, defaultSiteSettings.site_integrations.giscus.lang),
+				loading: giscus.loading === 'eager' ? 'eager' : defaultSiteSettings.site_integrations.giscus.loading,
+				enableOnPosts: asBoolean(giscus.enableOnPosts, defaultSiteSettings.site_integrations.giscus.enableOnPosts),
+				enableOnPages: asBoolean(giscus.enableOnPages, defaultSiteSettings.site_integrations.giscus.enableOnPages),
+			},
+			links: links
+				.map((item, index) => ({
+					id: asString(item?.id, `link-${index + 1}`),
+					label: asString(item?.label, `链接 ${index + 1}`),
+					url: asString(item?.url, '/'),
+					icon: asString(item?.icon, 'link'),
+					order: asNumber(item?.order, index + 1, 1, 999),
+				}))
+				.sort((a, b) => a.order - b.order),
+		},
+	};
+}
+
+async function readSiteSettings() {
+	try {
+		const raw = await fs.readFile(settingsPath, 'utf-8');
+		return normalizeSiteSettings(JSON.parse(raw));
+	} catch {
+		return normalizeSiteSettings(defaultSiteSettings);
+	}
+}
+
+async function writeSiteSettings(settings) {
+	const normalized = normalizeSiteSettings(settings);
+	await fs.writeFile(settingsPath, `${JSON.stringify(normalized, null, 2)}\n`, 'utf-8');
+	return normalized;
+}
+
 app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));
 
@@ -146,6 +593,53 @@ app.use(
 );
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+app.get('/api/site-settings/meta', (_req, res) => {
+	res.json({ meta: siteSettingsMeta });
+});
+
+app.get('/api/site-settings', async (_req, res) => {
+	try {
+		const settings = await readSiteSettings();
+		res.json({ settings, meta: siteSettingsMeta });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
+
+app.put('/api/site-settings/save', async (req, res) => {
+	try {
+		const incoming = req.body?.settings;
+		if (!incoming || typeof incoming !== 'object') {
+			return res.status(400).json({ error: 'invalid_settings' });
+		}
+		const current = await readSiteSettings();
+		const next = normalizeSiteSettings({
+			...current,
+			...incoming,
+			savedAt: new Date().toISOString(),
+		});
+		const settings = await writeSiteSettings(next);
+		res.json({ ok: true, settings });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
+
+app.post('/api/site-settings/publish', async (_req, res) => {
+	try {
+		const current = await readSiteSettings();
+		const now = new Date().toISOString();
+		const settings = await writeSiteSettings({
+			...current,
+			savedAt: current.savedAt || now,
+			publishedAt: now,
+		});
+		res.json({ ok: true, settings });
+	} catch (e) {
+		res.status(500).json({ error: String(e) });
+	}
+});
 
 app.use((req, res, next) => {
 	if (req.path.startsWith('/api/') || req.path === '/api') {

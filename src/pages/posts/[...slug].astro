@@ -1,9 +1,12 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Toc from '../../components/Toc.astro';
+import GiscusComments from '../../components/GiscusComments.astro';
 import { getCollection } from 'astro:content';
 import { getCategories, getPrimaryCategory } from '../../utils/blog';
 import { withBase } from '../../utils/paths';
+import { getSiteSettings } from '../../config/site-settings';
+import { shouldEnableGiscus } from '../../utils/giscus';
 
 export async function getStaticPaths() {
 	const posts = await getCollection('blog', ({ data }) => !data.draft);
@@ -17,6 +20,8 @@ const { post } = Astro.props;
 const { Content, headings } = await post.render();
 const categories = getCategories(post);
 const primaryCategory = getPrimaryCategory(post);
+const settings = await getSiteSettings();
+const enableGiscus = shouldEnableGiscus(settings, 'post');
 ---
 
 <Layout title={post.data.title} description={post.data.description}>
@@ -54,10 +59,13 @@ const primaryCategory = getPrimaryCategory(post);
 		</div>
 
 		<div class="article-body">
-			<div class="content panel">
-				<div class="prose">
-					<Content />
+			<div class="main-col">
+				<div class="content panel">
+					<div class="prose">
+						<Content />
+					</div>
 				</div>
+				{enableGiscus ? <GiscusComments settings={settings} /> : null}
 			</div>
 			<div class="side">
 				<Toc headings={headings} variant="sidebar" />
@@ -119,6 +127,12 @@ const primaryCategory = getPrimaryCategory(post);
 
 	.content {
 		padding: 18px;
+	}
+
+	.main-col {
+		display: grid;
+		gap: 14px;
+		align-content: start;
 	}
 
 	.toc-mobile {

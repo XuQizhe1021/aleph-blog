@@ -1,12 +1,53 @@
 ---
 import { siteConfig } from '../site.config';
+import RandomPostLink from './RandomPostLink.astro';
+import { getSiteSettings } from '../config/site-settings';
+
+const settings = await getSiteSettings();
+const now = new Date();
+const hour = now.getHours();
+const t = settings.site_theme_tweaks;
+const texts = settings.site_texts;
+let greeting = texts.greetingNight;
+if (hour < t.greetingMorningEndHour) greeting = texts.greetingMorning;
+else if (hour < t.greetingNoonEndHour) greeting = texts.greetingNoon;
+else if (hour < t.greetingAfternoonEndHour) greeting = texts.greetingAfternoon;
+else if (hour < t.greetingEveningEndHour) greeting = texts.greetingEvening;
 ---
 
 <footer class="site-footer">
-	<div class="inner muted">
+	<div class="inner muted" data-footer-root>
 		<span>© {new Date().getFullYear()} {siteConfig.author}</span>
+		{settings.site_features.visual.dynamicFooterGreeting ? <span>{greeting}</span> : null}
+		<span>{texts.footerSignature}</span>
+		{settings.site_features.tools.siteUptime ? <span data-site-uptime>运行中...</span> : null}
+		{
+			settings.site_features.tools.randomPost ? (
+				<RandomPostLink className="random-link" label={texts.randomPostLabel} />
+			) : null
+		}
 	</div>
 </footer>
+
+<script is:inline define:vars={{ settings }}>
+	(() => {
+		if (!settings?.site_features?.tools?.siteUptime) return;
+		const mount = document.querySelector('[data-site-uptime]');
+		if (!(mount instanceof HTMLElement)) return;
+		const start = new Date(settings.site_theme_tweaks.uptimeStartAt).getTime();
+		if (!Number.isFinite(start)) return;
+		const tick = () => {
+			const diff = Math.max(0, Date.now() - start);
+			const totalSec = Math.floor(diff / 1000);
+			const day = Math.floor(totalSec / 86400);
+			const hour = Math.floor((totalSec % 86400) / 3600);
+			const min = Math.floor((totalSec % 3600) / 60);
+			mount.textContent = `运行 ${day}天 ${hour}小时 ${min}分钟`;
+		};
+		tick();
+		window.setInterval(tick, 10000);
+	})();
+</script>
 
 <style>
 	.site-footer {
@@ -18,10 +59,20 @@ import { siteConfig } from '../site.config';
 	.inner {
 		width: min(1140px, calc(100% - 32px));
 		margin: 0 auto;
-		height: 58px;
+		min-height: 58px;
 		display: flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 10px;
+		padding: 10px 0;
+	}
+
+	.random-link {
+		color: var(--muted);
+	}
+
+	.random-link:hover {
+		color: var(--text);
 	}
 
 </style>

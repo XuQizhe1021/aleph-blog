@@ -47,32 +47,60 @@ const settings = await getSiteSettings();
 
 <script is:inline>
 	(() => {
-		const drawer = document.querySelector('[data-sidebar]');
-		if (!(drawer instanceof HTMLElement)) return;
-		const launcher = document.querySelector('[data-sidebar-launcher]');
-		const closeBtn = drawer.querySelector('[data-sidebar-close]');
-		const mask = document.querySelector('[data-sidebar-mask]');
-		if (!(launcher instanceof HTMLButtonElement)) return;
-
-		const setOpen = (open) => {
-			drawer.dataset.open = open ? '1' : '0';
-			drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+		const syncSidebarState = (open) => {
+			const drawer = document.querySelector('[data-sidebar]');
+			const mask = document.querySelector('[data-sidebar-mask]');
+			if (drawer instanceof HTMLElement) {
+				drawer.dataset.open = open ? '1' : '0';
+				drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+			}
 			if (mask instanceof HTMLElement) {
 				mask.dataset.open = open ? '1' : '0';
 				mask.setAttribute('aria-hidden', open ? 'false' : 'true');
 			}
-			localStorage.setItem('site_sidebar_open', open ? '1' : '0');
 		};
 
-		const initial = localStorage.getItem('site_sidebar_open');
-		if (initial === '0' || initial === '1') setOpen(initial === '1');
+		const setOpen = (open) => {
+			syncSidebarState(open);
+			try {
+				localStorage.setItem('site_sidebar_open', open ? '1' : '0');
+			} catch {}
+		};
 
-		launcher.addEventListener('click', () => setOpen(true));
-		closeBtn?.addEventListener('click', () => setOpen(false));
-		mask?.addEventListener('click', () => setOpen(false));
-		window.addEventListener('keydown', (e) => {
-			if (e.key === 'Escape') setOpen(false);
-		});
+		const applyStoredState = () => {
+			let initial = null;
+			try {
+				initial = localStorage.getItem('site_sidebar_open');
+			} catch {}
+			if (initial === '0' || initial === '1') {
+				syncSidebarState(initial === '1');
+				return;
+			}
+			// 兜底：没有存储状态时优先关闭，避免遮罩锁死页面交互。
+			syncSidebarState(false);
+		};
+
+		if (!window.__SITE_SIDEBAR_BINDED__) {
+			window.__SITE_SIDEBAR_BINDED__ = true;
+			// 使用事件委托，避免 Astro 切页后元素替换导致监听失效。
+			document.addEventListener('click', (event) => {
+				const target = event.target;
+				if (!(target instanceof Element)) return;
+				if (target.closest('[data-sidebar-launcher]')) {
+					setOpen(true);
+					return;
+				}
+				if (target.closest('[data-sidebar-close]') || target.closest('[data-sidebar-mask]')) {
+					setOpen(false);
+				}
+			});
+			window.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') setOpen(false);
+			});
+		}
+
+		applyStoredState();
+		document.addEventListener('astro:page-load', applyStoredState);
 	})();
 </script>
 

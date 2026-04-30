@@ -47,45 +47,94 @@ if (settings.site_features.social.linkCard) {
 	</div>
 	<script is:inline>
 		(() => {
-			const btn = document.getElementById('theme-toggle');
-			const label = document.getElementById('theme-label');
-			const key = 'theme';
-			const get = () => document.documentElement.dataset.theme || 'light';
-			const set = (theme) => {
-				document.documentElement.dataset.theme = theme;
-				localStorage.setItem(key, theme);
-				if (label) label.textContent = theme === 'dark' ? '深色' : '浅色';
+			const getTheme = () => (document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+			const syncThemeLabel = () => {
+				const label = document.getElementById('theme-label');
+				if (label) label.textContent = getTheme() === 'dark' ? '深色' : '浅色';
 			};
-			set(get());
-			btn?.addEventListener('click', () => set(get() === 'dark' ? 'light' : 'dark'));
+			const setTheme = (theme) => {
+				if (typeof window.__SITE_SET_THEME__ === 'function') {
+					window.__SITE_SET_THEME__(theme);
+					return;
+				}
+				const normalized = theme === 'dark' ? 'dark' : 'light';
+				document.documentElement.dataset.theme = normalized;
+				try {
+					localStorage.setItem('theme', normalized);
+				} catch {}
+				window.dispatchEvent(new CustomEvent('site:theme-change', { detail: { theme: normalized } }));
+			};
+
+			if (!window.__SITE_THEME_BINDED__) {
+				window.__SITE_THEME_BINDED__ = true;
+				// 事件委托：切页后按钮节点替换也不会丢失主题切换能力。
+				document.addEventListener('click', (event) => {
+					const target = event.target;
+					if (!(target instanceof Element)) return;
+					if (!target.closest('#theme-toggle')) return;
+					setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+				});
+				window.addEventListener('site:theme-change', syncThemeLabel);
+			}
+			if (!window.__SITE_THEME_PAGELOAD_BINDED__) {
+				window.__SITE_THEME_PAGELOAD_BINDED__ = true;
+				document.addEventListener('astro:page-load', syncThemeLabel);
+			}
+			syncThemeLabel();
 		})();
 	</script>
 	<script is:inline>
 		(() => {
 			const root = document.documentElement;
-			const header = document.querySelector('.site-header');
-			const openBtn = document.getElementById('nav-toggle');
-			const drawer = document.getElementById('nav-drawer');
+			const getHeader = () => document.querySelector('.site-header');
+			const getOpenBtn = () => document.getElementById('nav-toggle');
+			const getDrawer = () => document.getElementById('nav-drawer');
 
 			const setHeaderHeight = () => {
+				const header = getHeader();
 				if (!(header instanceof HTMLElement)) return;
 				root.style.setProperty('--site-header-height', `${header.offsetHeight}px`);
 			};
 
 			const setOpen = (open) => {
 				root.dataset.navOpen = open ? '1' : '';
+				const openBtn = getOpenBtn();
+				const drawer = getDrawer();
 				if (drawer) drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
 				if (openBtn) openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
 				requestAnimationFrame(() => setHeaderHeight());
 			};
 
+			const syncNavState = () => setOpen(root.dataset.navOpen === '1');
+
+			if (!window.__SITE_NAV_BINDED__) {
+				window.__SITE_NAV_BINDED__ = true;
+				// 事件委托：导航按钮和抽屉链接在 Astro 切页后会重建，这里统一拦截。
+				document.addEventListener('click', (event) => {
+					const target = event.target;
+					if (!(target instanceof Element)) return;
+					if (target.closest('#nav-toggle')) {
+						setOpen(root.dataset.navOpen !== '1');
+						return;
+					}
+					if (target.closest('#nav-drawer a')) {
+						setOpen(false);
+					}
+				});
+				window.addEventListener('keydown', (e) => {
+					if (e.key === 'Escape') setOpen(false);
+				});
+				window.addEventListener('resize', setHeaderHeight);
+			}
+			if (!window.__SITE_NAV_PAGELOAD_BINDED__) {
+				window.__SITE_NAV_PAGELOAD_BINDED__ = true;
+				document.addEventListener('astro:page-load', () => {
+					syncNavState();
+					setHeaderHeight();
+				});
+			}
+			syncNavState();
 			setHeaderHeight();
-			openBtn?.addEventListener('click', () => setOpen(root.dataset.navOpen !== '1'));
-			window.addEventListener('keydown', (e) => {
-				if (e.key === 'Escape') setOpen(false);
-			});
-			drawer?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
-			window.addEventListener('resize', () => setHeaderHeight());
 		})();
 	</script>
 </header>

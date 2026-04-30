@@ -50,12 +50,58 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 		</style>
 		<script is:inline>
 			(() => {
-				const key = 'theme';
-				const stored = localStorage.getItem(key);
-				const prefersDark =
-					window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-				const theme = stored ?? (prefersDark ? 'dark' : 'light');
-				document.documentElement.dataset.theme = theme;
+				const root = document.documentElement;
+				const themeKey = 'theme';
+				const sidebarKey = 'site_sidebar_open';
+
+				const getPreferredTheme = () => {
+					try {
+						const stored = localStorage.getItem(themeKey);
+						if (stored === 'light' || stored === 'dark') return stored;
+					} catch {}
+					const prefersDark =
+						window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+					return prefersDark ? 'dark' : 'light';
+				};
+
+				const setTheme = (theme, persist = true) => {
+					const normalized = theme === 'dark' ? 'dark' : 'light';
+					root.dataset.theme = normalized;
+					if (persist) {
+						try {
+							localStorage.setItem(themeKey, normalized);
+						} catch {}
+					}
+					window.dispatchEvent(
+						new CustomEvent('site:theme-change', {
+							detail: { theme: normalized },
+						})
+					);
+				};
+
+				const applyTheme = () => setTheme(getPreferredTheme(), false);
+
+				const applySidebarState = () => {
+					let stored = null;
+					try {
+						stored = localStorage.getItem(sidebarKey);
+					} catch {}
+					if (stored === '1') {
+						root.dataset.sidebarOpen = '1';
+						return;
+					}
+					delete root.dataset.sidebarOpen;
+				};
+
+				// 在首屏和 Astro 切页后都重放全局状态，避免主题/侧边栏因 DOM 替换回退到默认样式。
+				applyTheme();
+				applySidebarState();
+				document.addEventListener('astro:page-load', () => {
+					applyTheme();
+					applySidebarState();
+				});
+
+				window.__SITE_SET_THEME__ = setTheme;
 			})();
 		</script>
 		<script is:inline define:vars={{ analyticsBaseUrl }}>

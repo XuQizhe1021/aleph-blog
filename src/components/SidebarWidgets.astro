@@ -46,7 +46,10 @@ const settings = await getSiteSettings();
 
 <script is:inline>
 	(() => {
+		const root = document.documentElement;
 		const syncSidebarState = (open) => {
+			root.dataset.sidebarOpen = open ? '1' : '';
+			if (!open) delete root.dataset.sidebarOpen;
 			const drawer = document.querySelector('[data-sidebar]');
 			if (drawer instanceof HTMLElement) {
 				drawer.dataset.open = open ? '1' : '0';
@@ -132,6 +135,7 @@ const settings = await getSiteSettings();
 		overflow: auto;
 	}
 
+	html[data-sidebar-open='1'] .site-sidebar,
 	.site-sidebar[data-open='1'] {
 		transform: translateX(0);
 	}

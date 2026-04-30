@@ -30,77 +30,96 @@
 				</div>
 			</header>
 			<div class="main">
-				<aside class="left">
-					<div class="panel left-panel">
-						<input id="filter" class="input" placeholder="搜索标题 / slug / 分类…" />
-						<div class="muted meta" id="count"></div>
+				<aside class="admin-nav panel" id="admin-nav" data-collapsed="0">
+					<div class="admin-nav-head">
+						<div class="admin-nav-title">功能导航</div>
+						<button class="btn" id="admin-nav-toggle" type="button">收纳</button>
 					</div>
-					<div class="list" id="list"></div>
+					<nav class="admin-nav-list" aria-label="后台功能导航">
+						<button class="btn admin-nav-item active" type="button" data-admin-page="posts">文章管理</button>
+						<button class="btn admin-nav-item" type="button" data-admin-page="assets">资源管理</button>
+						<button class="btn admin-nav-item" type="button" data-admin-page="settings">站点配置</button>
+					</nav>
 				</aside>
-				<section class="right">
-					<div class="panel viewer">
-						<div class="viewer-head">
-							<div class="viewer-title" id="v-title">请选择一篇文章</div>
-							<div class="viewer-actions">
-								<button class="btn" id="open-site" type="button" disabled>在站点中打开</button>
-								<button class="btn danger" id="delete" type="button" disabled>删除</button>
-							</div>
-						</div>
-						<div class="muted viewer-sub" id="v-sub"></div>
-						<div class="viewer-meta">
-							<div class="row">
-								<div class="label">分类</div>
-								<div class="viewer-edit">
-									<input
-										class="input"
-										id="edit-categories"
-										placeholder="多个分类用逗号分隔，例如：技术, 随笔"
-										disabled
-									/>
-									<button class="btn" id="save-categories" type="button" disabled>保存分类</button>
+				<section class="admin-pages">
+					<section class="admin-page" data-admin-page-panel="posts">
+						<div class="posts-layout">
+							<aside class="left">
+								<div class="panel left-panel">
+									<input id="filter" class="input" placeholder="搜索标题 / slug / 分类…" />
+									<div class="muted meta" id="count"></div>
 								</div>
-								<div class="hint">留空=设为未分类（删除文章 frontmatter 的 categories 字段）。</div>
+								<div class="list" id="list"></div>
+							</aside>
+							<div class="panel viewer">
+								<div class="viewer-head">
+									<div class="viewer-title" id="v-title">请选择一篇文章</div>
+									<div class="viewer-actions">
+										<button class="btn" id="open-site" type="button" disabled>在站点中打开</button>
+										<button class="btn danger" id="delete" type="button" disabled>删除</button>
+									</div>
+								</div>
+								<div class="muted viewer-sub" id="v-sub"></div>
+								<div class="viewer-meta">
+									<div class="row">
+										<div class="label">分类</div>
+										<div class="viewer-edit">
+											<input
+												class="input"
+												id="edit-categories"
+												placeholder="多个分类用逗号分隔，例如：技术, 随笔"
+												disabled
+											/>
+											<button class="btn" id="save-categories" type="button" disabled>保存分类</button>
+										</div>
+										<div class="hint">留空=设为未分类（删除文章 frontmatter 的 categories 字段）。</div>
+									</div>
+								</div>
+								<div class="split">
+									<div class="raw">
+										<div class="split-title muted">原始内容</div>
+										<pre class="code" id="raw"></pre>
+									</div>
+									<div class="preview">
+										<div class="split-title muted">预览</div>
+										<div class="prose" id="preview"></div>
+									</div>
+								</div>
 							</div>
 						</div>
-						<div class="split">
-							<div class="raw">
-								<div class="split-title muted">原始内容</div>
-								<pre class="code" id="raw"></pre>
+					</section>
+					<section class="admin-page" data-admin-page-panel="assets" hidden>
+						<div class="panel start-manager">
+							<div class="viewer-head">
+								<div class="viewer-title">首页启动层管理</div>
 							</div>
-							<div class="preview">
-								<div class="split-title muted">预览</div>
-								<div class="prose" id="preview"></div>
+							<div class="hint">
+								管理博客首页全屏启动图片。进入站点时会随机首图，支持左右轮换与上滑收起。
 							</div>
+							<div class="start-list" id="start-list"></div>
 						</div>
-					</div>
-					<div class="panel start-manager">
-						<div class="viewer-head">
-							<div class="viewer-title">首页启动层管理</div>
-						</div>
-						<div class="hint">
-							管理博客首页全屏启动图片。进入站点时会随机首图，支持左右轮换与上滑收起。
-						</div>
-						<div class="start-list" id="start-list"></div>
-					</div>
-					<div class="panel settings-center">
-						<div class="viewer-head">
-							<div class="viewer-title">站点配置中心</div>
-							<div class="viewer-actions">
-								<button class="btn" id="settings-preview" type="button">预览配置</button>
-								<button class="btn" id="settings-save" type="button">保存草稿</button>
-								<button class="btn" id="settings-publish" type="button">发布生效</button>
+					</section>
+					<section class="admin-page" data-admin-page-panel="settings" hidden>
+						<div class="panel settings-center">
+							<div class="viewer-head">
+								<div class="viewer-title">站点配置中心</div>
+								<div class="viewer-actions">
+									<button class="btn" id="settings-preview" type="button">预览配置</button>
+									<button class="btn" id="settings-save" type="button">保存草稿</button>
+									<button class="btn" id="settings-publish" type="button">发布生效</button>
+								</div>
 							</div>
+							<div class="muted viewer-sub" id="settings-meta">加载中...</div>
+							<div class="settings-tabs">
+								<button class="btn settings-tab active" type="button" data-settings-tab="features">功能开关</button>
+								<button class="btn settings-tab" type="button" data-settings-tab="texts">文案配置</button>
+								<button class="btn settings-tab" type="button" data-settings-tab="integrations">第三方集成</button>
+							</div>
+							<div class="settings-panel" id="settings-features"></div>
+							<div class="settings-panel" id="settings-texts" hidden></div>
+							<div class="settings-panel" id="settings-integrations" hidden></div>
 						</div>
-						<div class="muted viewer-sub" id="settings-meta">加载中...</div>
-						<div class="settings-tabs">
-							<button class="btn settings-tab active" type="button" data-settings-tab="features">功能开关</button>
-							<button class="btn settings-tab" type="button" data-settings-tab="texts">文案配置</button>
-							<button class="btn settings-tab" type="button" data-settings-tab="integrations">第三方集成</button>
-						</div>
-						<div class="settings-panel" id="settings-features"></div>
-						<div class="settings-panel" id="settings-texts" hidden></div>
-						<div class="settings-panel" id="settings-integrations" hidden></div>
-					</div>
+					</section>
 				</section>
 			</div>
 		</div>

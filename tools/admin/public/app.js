@@ -31,6 +31,8 @@ const $settingsPublish = $('settings-publish');
 const $settingsFeatures = $('settings-features');
 const $settingsTexts = $('settings-texts');
 const $settingsIntegrations = $('settings-integrations');
+const $adminNav = $('admin-nav');
+const $adminNavToggle = $('admin-nav-toggle');
 
 let posts = [];
 let activeSlug = '';
@@ -42,10 +44,61 @@ let startImages = [];
 let settingsDraft = null;
 let settingsMeta = null;
 let settingsActiveTab = 'features';
+let adminPage = 'posts';
 
 const baseUrl = (path) => `${path}`;
 const formatDate = (s) => (s ? new Date(s).toLocaleDateString('zh-CN') : '');
 const formatDateTime = (s) => (s ? new Date(s).toLocaleString('zh-CN') : '—');
+const settingsCardState = {
+	features: 'features-视觉微调',
+	texts: 'texts-文案配置',
+	integrations: 'integrations-giscus',
+};
+
+const fieldHelpMap = {
+	'site_texts.footerSignature': ['页脚签名', '显示在页脚的补充说明文案'],
+	'site_texts.greetingMorning': ['早晨问候', '用于清晨时段的问候语'],
+	'site_texts.greetingNoon': ['中午问候', '用于中午时段的问候语'],
+	'site_texts.greetingAfternoon': ['下午问候', '用于下午时段的问候语'],
+	'site_texts.greetingEvening': ['晚间问候', '用于晚上时段的问候语'],
+	'site_texts.greetingNight': ['深夜问候', '用于夜间时段的问候语'],
+	'site_texts.copyCode': ['复制按钮文案', '代码块复制按钮默认文字'],
+	'site_texts.copySuccess': ['复制成功文案', '复制成功后短提示文字'],
+	'site_texts.copyFailed': ['复制失败文案', '复制失败时提示文字'],
+	'site_texts.mermaidFallback': ['Mermaid失败提示', '流程图渲染失败时提示'],
+	'site_texts.sidebarTitle': ['侧边栏标题', '抽屉侧边栏标题与按钮文案'],
+	'site_texts.sidebarStatusLabel': ['状态标签标题', '例如“当前状态”'],
+	'site_texts.sidebarActivityLabel': ['活跃区标题', '例如“活跃日历”'],
+	'site_texts.sidebarStatusValue': ['状态值', '状态标签实际内容'],
+	'site_texts.sidebarActivityHint': ['活跃区说明', '活跃区的占位或说明文字'],
+	'site_texts.randomPostLabel': ['随机文章按钮', '页脚随机文章入口文案'],
+	'site_texts.notFoundRandomLabel': ['404随机入口文案', '404 页随机文章按钮文案'],
+	'site_texts.linksPageTitle': ['链接页标题', '数字名片页主标题'],
+	'site_texts.linksPageIntro': ['链接页简介', '数字名片页说明文字'],
+	'site_theme_tweaks.viewTransitionDurationMs': ['切换动画时长(ms)', '页面过渡动画持续时长'],
+	'site_theme_tweaks.viewTransitionEasing': ['切换动画曲线', '例如 ease / linear / ease-in-out'],
+	'site_theme_tweaks.cursorLight': ['浅色模式鼠标样式', 'CSS cursor 值，如 auto / pointer'],
+	'site_theme_tweaks.cursorDark': ['深色模式鼠标样式', 'CSS cursor 值，如 auto / pointer'],
+	'site_theme_tweaks.greetingMorningEndHour': ['早晨截止小时', '小时范围 1-23'],
+	'site_theme_tweaks.greetingNoonEndHour': ['中午截止小时', '小时范围 1-23'],
+	'site_theme_tweaks.greetingAfternoonEndHour': ['下午截止小时', '小时范围 1-23'],
+	'site_theme_tweaks.greetingEveningEndHour': ['晚上截止小时', '小时范围 1-23'],
+	'site_theme_tweaks.festivalStartDate': ['节日开始日期', '格式 MM-DD，例如 12-24'],
+	'site_theme_tweaks.festivalEndDate': ['节日结束日期', '格式 MM-DD，例如 12-26'],
+	'site_theme_tweaks.festivalDurationMs': ['节日动效时长(ms)', '动效显示时长，建议 600-8000'],
+	'site_theme_tweaks.tocActiveOffset': ['目录高亮偏移', '滚动联动时的顶部偏移值'],
+	'site_theme_tweaks.sidebarDefaultCollapsed': ['侧边栏默认收起', '是否默认关闭抽屉侧边栏'],
+	'site_theme_tweaks.uptimeStartAt': ['站点起始时间', '用于页脚运行时长计时'],
+	'site_integrations.giscus.repo': ['Giscus 仓库', '格式 owner/repo'],
+	'site_integrations.giscus.repoId': ['Giscus Repo ID', '从 Giscus 配置页面复制'],
+	'site_integrations.giscus.category': ['Giscus 分类名', '评论映射到的 Discussions 分类名'],
+	'site_integrations.giscus.categoryId': ['Giscus 分类ID', '从 Giscus 配置页面复制'],
+	'site_integrations.giscus.mapping': ['评论映射策略', '按 pathname/url/title 等映射评论主题'],
+	'site_integrations.giscus.term': ['指定映射值', 'mapping=specific 时填写'],
+	'site_integrations.giscus.lang': ['评论语言', '如 zh-CN / en'],
+	'site_integrations.giscus.enableOnPosts': ['文章页启用', '文章详情页是否显示评论'],
+	'site_integrations.giscus.enableOnPages': ['普通页启用', '非文章页是否显示评论'],
+};
 
 function clone(value) {
 	return JSON.parse(JSON.stringify(value));
@@ -125,6 +178,16 @@ function renderList() {
 		.join('');
 }
 
+function showAdminPage(page) {
+	adminPage = page;
+	document.querySelectorAll('[data-admin-page]').forEach((btn) => {
+		btn.classList.toggle('active', btn.getAttribute('data-admin-page') === page);
+	});
+	document.querySelectorAll('[data-admin-page-panel]').forEach((panel) => {
+		panel.hidden = panel.getAttribute('data-admin-page-panel') !== page;
+	});
+}
+
 async function loadPosts() {
 	const resp = await fetch(baseUrl('/api/posts'));
 	const data = await resp.json();
@@ -168,6 +231,38 @@ function updateSettingsMeta() {
 	$settingsMeta.textContent = `保存时间：${formatDateTime(settingsDraft.savedAt)} · 生效时间：${formatDateTime(settingsDraft.publishedAt)}`;
 }
 
+function getFieldHelp(path) {
+	const item = fieldHelpMap[path];
+	if (!item) return { label: path, desc: '' };
+	return { label: item[0], desc: item[1] };
+}
+
+function renderCardSwitcher(group, cards) {
+	const active = settingsCardState[group] || cards[0]?.id;
+	return `
+		<div class="settings-card-switch" data-card-group="${group}">
+			<div class="settings-card-tabs">
+				${cards
+					.map(
+						(card) => `<button class="btn settings-card-tab ${active === card.id ? 'active' : ''}" type="button" data-card-toggle data-card-group="${group}" data-card-target="${card.id}">${card.title}</button>`
+					)
+					.join('')}
+			</div>
+			${cards
+				.map(
+					(card) => `
+				<section class="settings-card ${active === card.id ? 'active' : ''}" data-card-id="${card.id}" ${active === card.id ? '' : 'hidden'}>
+					<div class="settings-group-title">${card.title}</div>
+					${card.desc ? `<div class="hint">${card.desc}</div>` : ''}
+					${card.body}
+				</section>
+			`
+				)
+				.join('')}
+		</div>
+	`;
+}
+
 function renderFeatureRows(groupTitle, rows) {
 	return `
 		<div class="settings-group">
@@ -176,10 +271,11 @@ function renderFeatureRows(groupTitle, rows) {
 				.map(
 					(item) => `
 				<label class="settings-row">
-					<label class="settings-switch">
+					<div class="settings-switch">
 						<input type="checkbox" data-settings-path="${item.key}" ${getByPath(settingsDraft, item.key) ? 'checked' : ''} />
-						<span>${item.key}</span>
-					</label>
+						<span>${item.consume || item.key}</span>
+					</div>
+					<div class="muted settings-key">${item.key}</div>
 					<div class="hint">默认值：${String(item.defaultValue)}；回滚：${item.rollback}</div>
 				</label>
 			`
@@ -192,10 +288,20 @@ function renderFeatureRows(groupTitle, rows) {
 function renderSettingsFeatures() {
 	if (!$settingsFeatures || !settingsDraft || !settingsMeta) return;
 	const groups = ['视觉微调', '内容增强', '实用工具', '社交互动'].map((name) => ({
-		name,
+		id: `features-${name}`,
+		title: name,
+		desc: `该分组包含 ${name} 相关开关，建议逐项灰度开启。`,
 		rows: settingsMeta.site_features.filter((item) => item.category === name),
 	}));
-	$settingsFeatures.innerHTML = groups.map((g) => renderFeatureRows(g.name, g.rows)).join('');
+	$settingsFeatures.innerHTML = renderCardSwitcher(
+		'features',
+		groups.map((g) => ({
+			id: g.id,
+			title: g.title,
+			desc: g.desc,
+			body: renderFeatureRows(g.title, g.rows),
+		}))
+	);
 }
 
 function renderSettingsTexts() {
@@ -221,72 +327,101 @@ function renderSettingsTexts() {
 		'site_texts.linksPageTitle',
 		'site_texts.linksPageIntro',
 	];
-	$settingsTexts.innerHTML = `
-		<div class="settings-group">
-			<div class="settings-group-title">文案配置</div>
-			${paths
-				.map((path) => {
-					const value = getByPath(settingsDraft, path) ?? '';
-					const isLong = /Signature|Intro|Hint/.test(path);
-					return `
-						<label class="settings-row">
-							<div class="label">${path}</div>
-							${isLong ? `<textarea class="textarea" data-settings-path="${path}">${value}</textarea>` : `<input class="input" data-settings-path="${path}" value="${value.replaceAll('"', '&quot;')}" />`}
-						</label>
-					`;
-				})
-				.join('')}
-		</div>
-		<div class="settings-group">
-			<div class="settings-group-title">视觉参数</div>
-			<label class="settings-row"><div class="label">site_theme_tweaks.viewTransitionDurationMs</div><input class="input" type="number" data-settings-path="site_theme_tweaks.viewTransitionDurationMs" value="${getByPath(settingsDraft, 'site_theme_tweaks.viewTransitionDurationMs')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.viewTransitionEasing</div><input class="input" data-settings-path="site_theme_tweaks.viewTransitionEasing" value="${getByPath(settingsDraft, 'site_theme_tweaks.viewTransitionEasing')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.cursorLight</div><input class="input" data-settings-path="site_theme_tweaks.cursorLight" value="${getByPath(settingsDraft, 'site_theme_tweaks.cursorLight')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.cursorDark</div><input class="input" data-settings-path="site_theme_tweaks.cursorDark" value="${getByPath(settingsDraft, 'site_theme_tweaks.cursorDark')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.greetingMorningEndHour</div><input class="input" type="number" data-settings-path="site_theme_tweaks.greetingMorningEndHour" value="${getByPath(settingsDraft, 'site_theme_tweaks.greetingMorningEndHour')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.greetingNoonEndHour</div><input class="input" type="number" data-settings-path="site_theme_tweaks.greetingNoonEndHour" value="${getByPath(settingsDraft, 'site_theme_tweaks.greetingNoonEndHour')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.greetingAfternoonEndHour</div><input class="input" type="number" data-settings-path="site_theme_tweaks.greetingAfternoonEndHour" value="${getByPath(settingsDraft, 'site_theme_tweaks.greetingAfternoonEndHour')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.greetingEveningEndHour</div><input class="input" type="number" data-settings-path="site_theme_tweaks.greetingEveningEndHour" value="${getByPath(settingsDraft, 'site_theme_tweaks.greetingEveningEndHour')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.festivalStartDate</div><input class="input" data-settings-path="site_theme_tweaks.festivalStartDate" value="${getByPath(settingsDraft, 'site_theme_tweaks.festivalStartDate')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.festivalEndDate</div><input class="input" data-settings-path="site_theme_tweaks.festivalEndDate" value="${getByPath(settingsDraft, 'site_theme_tweaks.festivalEndDate')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.festivalDurationMs</div><input class="input" type="number" data-settings-path="site_theme_tweaks.festivalDurationMs" value="${getByPath(settingsDraft, 'site_theme_tweaks.festivalDurationMs')}" /></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.tocActiveOffset</div><input class="input" type="number" data-settings-path="site_theme_tweaks.tocActiveOffset" value="${getByPath(settingsDraft, 'site_theme_tweaks.tocActiveOffset')}" /></label>
-			<label class="settings-switch"><input type="checkbox" data-settings-path="site_theme_tweaks.sidebarDefaultCollapsed" ${getByPath(settingsDraft, 'site_theme_tweaks.sidebarDefaultCollapsed') ? 'checked' : ''} /><span>site_theme_tweaks.sidebarDefaultCollapsed</span></label>
-			<label class="settings-row"><div class="label">site_theme_tweaks.uptimeStartAt</div><input class="input" data-settings-path="site_theme_tweaks.uptimeStartAt" value="${getByPath(settingsDraft, 'site_theme_tweaks.uptimeStartAt')}" /></label>
-		</div>
-	`;
+	const textBody = paths
+		.map((path) => {
+			const value = getByPath(settingsDraft, path) ?? '';
+			const isLong = /Signature|Intro|Hint/.test(path);
+			const help = getFieldHelp(path);
+			return `
+				<label class="settings-row">
+					<div class="label">${help.label}</div>
+					<div class="hint">${help.desc}</div>
+					<div class="muted settings-key">${path}</div>
+					${isLong ? `<textarea class="textarea" data-settings-path="${path}">${value}</textarea>` : `<input class="input" data-settings-path="${path}" value="${String(value).replaceAll('"', '&quot;')}" />`}
+				</label>
+			`;
+		})
+		.join('');
+
+	const tweakPaths = [
+		'site_theme_tweaks.viewTransitionDurationMs',
+		'site_theme_tweaks.viewTransitionEasing',
+		'site_theme_tweaks.cursorLight',
+		'site_theme_tweaks.cursorDark',
+		'site_theme_tweaks.greetingMorningEndHour',
+		'site_theme_tweaks.greetingNoonEndHour',
+		'site_theme_tweaks.greetingAfternoonEndHour',
+		'site_theme_tweaks.greetingEveningEndHour',
+		'site_theme_tweaks.festivalStartDate',
+		'site_theme_tweaks.festivalEndDate',
+		'site_theme_tweaks.festivalDurationMs',
+		'site_theme_tweaks.tocActiveOffset',
+		'site_theme_tweaks.uptimeStartAt',
+	];
+	const tweakBody = tweakPaths
+		.map((path) => {
+			const help = getFieldHelp(path);
+			const value = getByPath(settingsDraft, path);
+			const numberInput = /Duration|Offset|Hour/.test(path);
+			return `<label class="settings-row"><div class="label">${help.label}</div><div class="hint">${help.desc}</div><div class="muted settings-key">${path}</div><input class="input" ${numberInput ? 'type="number"' : ''} data-settings-path="${path}" value="${String(value ?? '').replaceAll('"', '&quot;')}" /></label>`;
+		})
+		.join('');
+	const collapseHelp = getFieldHelp('site_theme_tweaks.sidebarDefaultCollapsed');
+	const collapseBody = `<label class="settings-row"><div class="label">${collapseHelp.label}</div><div class="hint">${collapseHelp.desc}</div><div class="muted settings-key">site_theme_tweaks.sidebarDefaultCollapsed</div><label class="settings-switch"><input type="checkbox" data-settings-path="site_theme_tweaks.sidebarDefaultCollapsed" ${getByPath(settingsDraft, 'site_theme_tweaks.sidebarDefaultCollapsed') ? 'checked' : ''} /><span>启用</span></label></label>`;
+	$settingsTexts.innerHTML = renderCardSwitcher('texts', [
+		{ id: 'texts-文案配置', title: '文案配置', desc: '用于页面文案与提示信息配置。', body: `<div class="settings-group">${textBody}</div>` },
+		{ id: 'texts-视觉参数', title: '视觉参数', desc: '用于动画、光标、时段边界等参数配置。', body: `<div class="settings-group">${tweakBody}${collapseBody}</div>` },
+	]);
 }
 
 function renderSettingsIntegrations() {
 	if (!$settingsIntegrations || !settingsDraft) return;
-	const linksRows = (getByPath(settingsDraft, 'site_integrations.links') || [])
-		.map(
-			(item, idx) => `
-		<div class="settings-group">
-			<div class="settings-group-title">链接项 ${idx + 1}</div>
-			<label class="settings-row"><div class="label">id</div><input class="input" data-settings-path="site_integrations.links.${idx}.id" value="${item.id}" /></label>
-			<label class="settings-row"><div class="label">label</div><input class="input" data-settings-path="site_integrations.links.${idx}.label" value="${item.label}" /></label>
-			<label class="settings-row"><div class="label">url</div><input class="input" data-settings-path="site_integrations.links.${idx}.url" value="${item.url}" /></label>
-			<label class="settings-row"><div class="label">icon</div><input class="input" data-settings-path="site_integrations.links.${idx}.icon" value="${item.icon}" /></label>
-			<label class="settings-row"><div class="label">order</div><input class="input" type="number" data-settings-path="site_integrations.links.${idx}.order" value="${item.order}" /></label>
-		</div>`
-		)
+	const giscusFields = [
+		'site_integrations.giscus.repo',
+		'site_integrations.giscus.repoId',
+		'site_integrations.giscus.category',
+		'site_integrations.giscus.categoryId',
+		'site_integrations.giscus.mapping',
+		'site_integrations.giscus.term',
+		'site_integrations.giscus.lang',
+	];
+	const giscusBody = giscusFields
+		.map((path) => {
+			const help = getFieldHelp(path);
+			if (path === 'site_integrations.giscus.mapping') {
+				return `<label class="settings-row"><div class="label">${help.label}</div><div class="hint">${help.desc}</div><div class="muted settings-key">${path}</div><select class="select" data-settings-path="${path}"><option value="pathname">pathname</option><option value="url">url</option><option value="title">title</option><option value="og:title">og:title</option><option value="specific">specific</option><option value="number">number</option></select></label>`;
+			}
+			return `<label class="settings-row"><div class="label">${help.label}</div><div class="hint">${help.desc}</div><div class="muted settings-key">${path}</div><input class="input" data-settings-path="${path}" value="${String(getByPath(settingsDraft, path) ?? '').replaceAll('"', '&quot;')}" /></label>`;
+		})
 		.join('');
-	$settingsIntegrations.innerHTML = `
-		<div class="settings-group">
-			<div class="settings-group-title">Giscus 评论</div>
-			<label class="settings-row"><div class="label">site_integrations.giscus.repo</div><input class="input" data-settings-path="site_integrations.giscus.repo" value="${getByPath(settingsDraft, 'site_integrations.giscus.repo')}" /></label>
-			<label class="settings-row"><div class="label">site_integrations.giscus.repoId</div><input class="input" data-settings-path="site_integrations.giscus.repoId" value="${getByPath(settingsDraft, 'site_integrations.giscus.repoId')}" /></label>
-			<label class="settings-row"><div class="label">site_integrations.giscus.category</div><input class="input" data-settings-path="site_integrations.giscus.category" value="${getByPath(settingsDraft, 'site_integrations.giscus.category')}" /></label>
-			<label class="settings-row"><div class="label">site_integrations.giscus.categoryId</div><input class="input" data-settings-path="site_integrations.giscus.categoryId" value="${getByPath(settingsDraft, 'site_integrations.giscus.categoryId')}" /></label>
-			<label class="settings-row"><div class="label">site_integrations.giscus.mapping</div><select class="select" data-settings-path="site_integrations.giscus.mapping"><option value="pathname">pathname</option><option value="url">url</option><option value="title">title</option><option value="og:title">og:title</option><option value="specific">specific</option><option value="number">number</option></select></label>
-			<label class="settings-row"><div class="label">site_integrations.giscus.term</div><input class="input" data-settings-path="site_integrations.giscus.term" value="${getByPath(settingsDraft, 'site_integrations.giscus.term')}" /></label>
-			<label class="settings-row"><div class="label">site_integrations.giscus.lang</div><input class="input" data-settings-path="site_integrations.giscus.lang" value="${getByPath(settingsDraft, 'site_integrations.giscus.lang')}" /></label>
-			<label class="settings-switch"><input type="checkbox" data-settings-path="site_integrations.giscus.enableOnPosts" ${getByPath(settingsDraft, 'site_integrations.giscus.enableOnPosts') ? 'checked' : ''} /><span>文章页启用评论</span></label>
-			<label class="settings-switch"><input type="checkbox" data-settings-path="site_integrations.giscus.enableOnPages" ${getByPath(settingsDraft, 'site_integrations.giscus.enableOnPages') ? 'checked' : ''} /><span>普通页面启用评论</span></label>
-		</div>
-		${linksRows}
-	`;
+	const enablePostsHelp = getFieldHelp('site_integrations.giscus.enableOnPosts');
+	const enablePagesHelp = getFieldHelp('site_integrations.giscus.enableOnPages');
+	const cards = [
+		{
+			id: 'integrations-giscus',
+			title: 'Giscus 评论',
+			desc: '配置 GitHub Discussions 评论系统。',
+			body: `<div class="settings-group">${giscusBody}
+				<label class="settings-row"><div class="label">${enablePostsHelp.label}</div><div class="hint">${enablePostsHelp.desc}</div><div class="muted settings-key">site_integrations.giscus.enableOnPosts</div><label class="settings-switch"><input type="checkbox" data-settings-path="site_integrations.giscus.enableOnPosts" ${getByPath(settingsDraft, 'site_integrations.giscus.enableOnPosts') ? 'checked' : ''} /><span>启用</span></label></label>
+				<label class="settings-row"><div class="label">${enablePagesHelp.label}</div><div class="hint">${enablePagesHelp.desc}</div><div class="muted settings-key">site_integrations.giscus.enableOnPages</div><label class="settings-switch"><input type="checkbox" data-settings-path="site_integrations.giscus.enableOnPages" ${getByPath(settingsDraft, 'site_integrations.giscus.enableOnPages') ? 'checked' : ''} /><span>启用</span></label></label>
+			</div>`,
+		},
+	];
+	(getByPath(settingsDraft, 'site_integrations.links') || []).forEach((item, idx) => {
+		cards.push({
+			id: `integrations-link-${idx}`,
+			title: `链接项 ${idx + 1}`,
+			desc: '用于链接/数字名片页面展示，按 order 升序。',
+			body: `<div class="settings-group">
+				<label class="settings-row"><div class="label">唯一标识</div><div class="hint">系统内唯一 key，建议英文</div><div class="muted settings-key">site_integrations.links.${idx}.id</div><input class="input" data-settings-path="site_integrations.links.${idx}.id" value="${item.id}" /></label>
+				<label class="settings-row"><div class="label">显示名称</div><div class="hint">页面上展示的名称</div><div class="muted settings-key">site_integrations.links.${idx}.label</div><input class="input" data-settings-path="site_integrations.links.${idx}.label" value="${item.label}" /></label>
+				<label class="settings-row"><div class="label">链接地址</div><div class="hint">支持 http(s)、mailto、站内路径</div><div class="muted settings-key">site_integrations.links.${idx}.url</div><input class="input" data-settings-path="site_integrations.links.${idx}.url" value="${item.url}" /></label>
+				<label class="settings-row"><div class="label">图标标识</div><div class="hint">用于后续图标映射（如 github/rss/mail）</div><div class="muted settings-key">site_integrations.links.${idx}.icon</div><input class="input" data-settings-path="site_integrations.links.${idx}.icon" value="${item.icon}" /></label>
+				<label class="settings-row"><div class="label">排序值</div><div class="hint">数字越小越靠前</div><div class="muted settings-key">site_integrations.links.${idx}.order</div><input class="input" type="number" data-settings-path="site_integrations.links.${idx}.order" value="${item.order}" /></label>
+			</div>`,
+		});
+	});
+	$settingsIntegrations.innerHTML = renderCardSwitcher('integrations', cards);
 	const mappingSelect = $settingsIntegrations.querySelector('select[data-settings-path="site_integrations.giscus.mapping"]');
 	if (mappingSelect) mappingSelect.value = getByPath(settingsDraft, 'site_integrations.giscus.mapping');
 }
@@ -700,7 +835,33 @@ document.querySelectorAll('.settings-tab').forEach((btn) => {
 	});
 });
 
+document.querySelectorAll('[data-admin-page]').forEach((btn) => {
+	btn.addEventListener('click', () => {
+		const page = btn.getAttribute('data-admin-page');
+		if (!page) return;
+		showAdminPage(page);
+	});
+});
+
+$adminNavToggle?.addEventListener('click', () => {
+	if (!$adminNav) return;
+	const collapsed = $adminNav.dataset.collapsed === '1';
+	$adminNav.dataset.collapsed = collapsed ? '0' : '1';
+	$adminNavToggle.textContent = collapsed ? '收纳' : '展开';
+});
+
 [$settingsFeatures, $settingsTexts, $settingsIntegrations].forEach((el) => {
+	el?.addEventListener('click', (ev) => {
+		const btn = ev.target?.closest?.('[data-card-toggle]');
+		if (!btn) return;
+		const group = btn.getAttribute('data-card-group');
+		const target = btn.getAttribute('data-card-target');
+		if (!group || !target) return;
+		settingsCardState[group] = target;
+		if (group === 'features') renderSettingsFeatures();
+		if (group === 'texts') renderSettingsTexts();
+		if (group === 'integrations') renderSettingsIntegrations();
+	});
 	el?.addEventListener('input', (ev) => {
 		syncInputToDraft(ev.target);
 	});
@@ -853,3 +1014,4 @@ $manageCategories?.addEventListener('click', async () => {
 });
 
 await Promise.all([loadPosts(), loadStartAssets(), loadSiteSettings()]);
+showAdminPage(adminPage);

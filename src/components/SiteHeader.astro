@@ -12,9 +12,6 @@ type NavItem = {
 	label: string;
 };
 const dynamicNav: NavItem[] = [...siteConfig.nav];
-if (settings.site_features.tools.timeMachine) {
-	dynamicNav.push({ href: '/time-machine', label: '时光机' });
-}
 if (settings.site_features.social.linkCard) {
 	dynamicNav.push({ href: '/links', label: '链接' });
 }

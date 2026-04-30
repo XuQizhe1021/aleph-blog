@@ -275,8 +275,79 @@ a {
 	margin: 0 auto;
 	padding: 16px 0 24px;
 	display: grid;
+	grid-template-columns: 240px minmax(0, 1fr);
+	gap: 14px;
+}
+
+.admin-nav {
+	padding: 12px;
+	display: grid;
+	gap: 10px;
+	align-content: start;
+	position: sticky;
+	top: 78px;
+	max-height: calc(100vh - 92px);
+	overflow: auto;
+}
+
+.admin-nav-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.admin-nav-title {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.admin-nav-list {
+	display: grid;
+	gap: 8px;
+}
+
+.admin-nav-item {
+	justify-content: flex-start;
+}
+
+.admin-nav-item.active {
+	border-color: color-mix(in oklab, var(--accent), var(--border) 10%);
+	box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 86%);
+}
+
+.admin-nav[data-collapsed='1'] {
+	width: 70px;
+}
+
+.admin-nav[data-collapsed='1'] .admin-nav-title {
+	display: none;
+}
+
+.admin-nav[data-collapsed='1'] .admin-nav-item {
+	justify-content: center;
+	padding: 0 8px;
+	font-size: 0;
+}
+
+.admin-nav[data-collapsed='1'] .admin-nav-item::after {
+	font-size: 12px;
+	content: '页';
+}
+
+.admin-pages {
+	min-width: 0;
+}
+
+.admin-page {
+	min-width: 0;
+}
+
+.posts-layout {
+	display: grid;
 	grid-template-columns: 360px minmax(0, 1fr);
 	gap: 14px;
+	align-items: start;
 }
 
 .left-panel {
@@ -327,14 +398,12 @@ a {
 }
 
 .start-manager {
-	margin-top: 14px;
 	padding: 14px;
 	display: grid;
 	gap: 12px;
 }
 
 .settings-center {
-	margin-top: 14px;
 	padding: 14px;
 	display: grid;
 	gap: 12px;
@@ -356,6 +425,31 @@ a {
 	gap: 12px;
 }
 
+.settings-card-switch {
+	display: grid;
+	gap: 10px;
+}
+
+.settings-card-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.settings-card-tab.active {
+	border-color: color-mix(in oklab, var(--accent), var(--border) 10%);
+	box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 86%);
+}
+
+.settings-card {
+	padding: 12px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: color-mix(in oklab, var(--panel-strong), transparent 22%);
+	display: grid;
+	gap: 10px;
+}
+
 .settings-group {
 	padding: 12px;
 	border: 1px solid var(--border);
@@ -373,6 +467,11 @@ a {
 .settings-row {
 	display: grid;
 	gap: 8px;
+}
+
+.settings-key {
+	font-size: 11px;
+	word-break: break-all;
 }
 
 .settings-switch {
@@ -510,6 +609,13 @@ a {
 
 @media (max-width: 1100px) {
 	.main {
+		grid-template-columns: 1fr;
+	}
+	.admin-nav {
+		position: static;
+		max-height: none;
+	}
+	.posts-layout {
 		grid-template-columns: 1fr;
 	}
 	.split {

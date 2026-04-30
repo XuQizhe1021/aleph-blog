@@ -4,21 +4,17 @@ import RandomPostLink from './RandomPostLink.astro';
 import { getSiteSettings } from '../config/site-settings';
 
 const settings = await getSiteSettings();
-const now = new Date();
-const hour = now.getHours();
-const t = settings.site_theme_tweaks;
 const texts = settings.site_texts;
-let greeting = texts.greetingNight;
-if (hour < t.greetingMorningEndHour) greeting = texts.greetingMorning;
-else if (hour < t.greetingNoonEndHour) greeting = texts.greetingNoon;
-else if (hour < t.greetingAfternoonEndHour) greeting = texts.greetingAfternoon;
-else if (hour < t.greetingEveningEndHour) greeting = texts.greetingEvening;
 ---
 
 <footer class="site-footer">
 	<div class="inner muted" data-footer-root>
 		<span>© {new Date().getFullYear()} {siteConfig.author}</span>
-		{settings.site_features.visual.dynamicFooterGreeting ? <span>{greeting}</span> : null}
+		{
+			settings.site_features.visual.dynamicFooterGreeting ? (
+				<span data-site-greeting>{texts.greetingNight}</span>
+			) : null
+		}
 		<span>{texts.footerSignature}</span>
 		{settings.site_features.tools.siteUptime ? <span data-site-uptime>运行中...</span> : null}
 		{
@@ -31,6 +27,37 @@ else if (hour < t.greetingEveningEndHour) greeting = texts.greetingEvening;
 
 <script is:inline define:vars={{ settings }}>
 	(() => {
+		if (settings?.site_features?.visual?.dynamicFooterGreeting) {
+			const text = settings.site_texts || {};
+			const tweaks = settings.site_theme_tweaks || {};
+			const greetingByHour = (hour) => {
+				if (hour < Number(tweaks.greetingMorningEndHour ?? 11))
+					return text.greetingMorning || '早上好，祝你今天高效顺利。';
+				if (hour < Number(tweaks.greetingNoonEndHour ?? 14))
+					return text.greetingNoon || '中午好，记得休息一下。';
+				if (hour < Number(tweaks.greetingAfternoonEndHour ?? 18))
+					return text.greetingAfternoon || '下午好，继续推进你的目标。';
+				if (hour < Number(tweaks.greetingEveningEndHour ?? 23))
+					return text.greetingEvening || '晚上好，欢迎来这里放松一下。';
+				return text.greetingNight || '夜深了，注意休息。';
+			};
+			const syncGreeting = () => {
+				// 使用访问者本地时间，避免服务端/构建机时区导致问候语错误。
+				const hour = new Date().getHours();
+				const greeting = greetingByHour(hour);
+				document.querySelectorAll('[data-site-greeting]').forEach((el) => {
+					el.textContent = greeting;
+				});
+			};
+
+			if (!window.__SITE_GREETING_BINDED__) {
+				window.__SITE_GREETING_BINDED__ = true;
+				document.addEventListener('astro:page-load', syncGreeting);
+				window.setInterval(syncGreeting, 60000);
+			}
+			syncGreeting();
+		}
+
 		if (!settings?.site_features?.tools?.siteUptime) return;
 		const start = new Date(settings.site_theme_tweaks.uptimeStartAt).getTime();
 		if (!Number.isFinite(start)) return;

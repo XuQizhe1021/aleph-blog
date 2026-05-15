@@ -305,7 +305,9 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 		};
 
 		const syncAll = () => {
-			document.querySelectorAll('[data-toc-root]').forEach((root) => setOpen(root, root.dataset.open === '1'));
+			document.querySelectorAll<HTMLElement>('[data-toc-root]').forEach((root) => {
+				setOpen(root, root.dataset.open === '1');
+			});
 		};
 
 		document.addEventListener('click', (event) => {
@@ -313,28 +315,28 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 			if (!(target instanceof Element)) return;
 			const toggle = target.closest('[data-toc-toggle]');
 			if (toggle) {
-				const root = toggle.closest('[data-toc-root]');
+				const root = toggle.closest<HTMLElement>('[data-toc-root]');
 				if (!root) return;
 				setOpen(root, root.dataset.open !== '1');
 				return;
 			}
 			const close = target.closest('[data-toc-close]');
 			if (close) {
-				const root = close.closest('[data-toc-root]');
+				const root = close.closest<HTMLElement>('[data-toc-root]');
 				if (!root) return;
 				setOpen(root, false);
 				return;
 			}
 			const link = target.closest('[data-toc-root] a[data-toc-link]');
 			if (link) {
-				const root = link.closest('[data-toc-root]');
+				const root = link.closest<HTMLElement>('[data-toc-root]');
 				if (root) setOpen(root, false);
 			}
 		});
 
 		window.addEventListener('keydown', (event) => {
 			if (event.key !== 'Escape') return;
-			document.querySelectorAll('[data-toc-root]').forEach((root) => setOpen(root, false));
+			document.querySelectorAll<HTMLElement>('[data-toc-root]').forEach((root) => setOpen(root, false));
 		});
 		window.addEventListener('resize', syncAll);
 		document.addEventListener('astro:page-load', syncAll);

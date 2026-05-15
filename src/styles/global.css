@@ -91,18 +91,22 @@ body {
 }
 
 /* 自定义鼠标皮肤：按主题写入 CSS 变量，统一覆盖普通/点击/加载三种形态。 */
-html[data-cursor-enabled='1'] body {
+html[data-cursor-enabled='1'],
+html[data-cursor-enabled='1'] body,
+html[data-cursor-enabled='1'] body *,
+html[data-cursor-enabled='1'] body *::before,
+html[data-cursor-enabled='1'] body *::after {
 	cursor: var(--site-cursor-normal, auto);
 }
 
 html[data-cursor-enabled='1']
 	:is(a, button, [role='button'], input, textarea, select, summary, label[for], .btn, .item):hover {
-	cursor: var(--site-cursor-click, pointer);
+	cursor: var(--site-cursor-click, pointer) !important;
 }
 
 html[data-cursor-enabled='1']
 	:is(a, button, [role='button'], input, textarea, select, summary, label[for], .btn, .item):active {
-	cursor: var(--site-cursor-click, pointer);
+	cursor: var(--site-cursor-click, pointer) !important;
 }
 
 html[data-cursor-enabled='1'][data-site-loading='1'],
@@ -249,6 +253,15 @@ a:hover {
 	scrollbar-color: var(--code-scroll-thumb) var(--code-scroll-track);
 }
 
+.prose .code-block-shell {
+	position: relative;
+}
+
+.prose .code-block-shell pre {
+	margin: 0;
+	padding-top: 52px;
+}
+
 .prose pre::-webkit-scrollbar {
 	height: 10px;
 }
@@ -272,8 +285,8 @@ a:hover {
 
 .code-copy-btn {
 	position: absolute;
-	top: 8px;
-	right: 8px;
+	top: 10px;
+	right: 10px;
 	height: 30px;
 	padding: 0 10px;
 	border-radius: 999px;

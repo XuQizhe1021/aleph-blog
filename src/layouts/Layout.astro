@@ -130,6 +130,9 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 
 				const setTheme = (theme, persist = true) => {
 					state.theme = setThemeDom(theme);
+					if (typeof window.__SITE_APPLY_CURSOR__ === 'function') {
+						window.__SITE_APPLY_CURSOR__();
+					}
 					syncThemeLabel();
 					if (persist) writeStorage(themeKey, state.theme);
 					window.dispatchEvent(new CustomEvent('site:theme-change', { detail: { theme: state.theme } }));
@@ -286,6 +289,7 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 					rootStyle.setProperty('--site-cursor-click', String(cursorClick));
 					rootStyle.setProperty('--site-cursor-loading', String(cursorLoading));
 				};
+				window.__SITE_APPLY_CURSOR__ = applyCursor;
 				const ensureCursorObserver = () => {
 					if (window.__SITE_CURSOR_OBSERVED__) return;
 					window.__SITE_CURSOR_OBSERVED__ = true;
@@ -298,9 +302,16 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 				const enableCodeCopy = () => {
 					if (!features?.content?.codeCopy) return;
 					document.querySelectorAll('pre').forEach((pre) => {
-						if (pre.querySelector('.code-copy-btn')) return;
 						const code = pre.querySelector('code');
 						if (!code) return;
+						let shell = pre.parentElement;
+						if (!shell?.classList.contains('code-block-shell')) {
+							shell = document.createElement('div');
+							shell.className = 'code-block-shell';
+							pre.parentNode?.insertBefore(shell, pre);
+							shell.appendChild(pre);
+						}
+						if (shell.querySelector('.code-copy-btn')) return;
 						const btn = document.createElement('button');
 						btn.type = 'button';
 						btn.className = 'code-copy-btn';
@@ -316,7 +327,7 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 								btn.textContent = text.copyCode || '复制';
 							}, 1400);
 						});
-						pre.appendChild(btn);
+						shell.appendChild(btn);
 					});
 				};
 

@@ -346,11 +346,10 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 	const run = () => {
 		const settings = (window as any).__SITE_SETTINGS__;
 		if (!settings?.site_features?.content?.tocEnhanced) return;
-		const offset = Number(settings?.site_theme_tweaks?.tocActiveOffset ?? 96);
-		const roots = Array.from(document.querySelectorAll('[data-toc-root]'));
-		if (!roots.length) return;
-
 		const update = () => {
+			const offset = Number((window as any).__SITE_SETTINGS__?.site_theme_tweaks?.tocActiveOffset ?? 96);
+			const roots = Array.from(document.querySelectorAll<HTMLElement>('[data-toc-root]'));
+			if (!roots.length) return;
 			const headings = Array.from(document.querySelectorAll<HTMLElement>('.prose h2[id], .prose h3[id], .prose h4[id]'));
 			const active = pickActiveTocHeading(
 				headings.map((el) => ({ id: el.id, top: el.getBoundingClientRect().top })),
@@ -364,9 +363,18 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 			});
 		};
 
+		(window as any).__SITE_TOC_ACTIVE_UPDATE__ = update;
+		if (!(window as any).__SITE_TOC_ACTIVE_BINDED__) {
+			(window as any).__SITE_TOC_ACTIVE_BINDED__ = true;
+			window.addEventListener('scroll', () => (window as any).__SITE_TOC_ACTIVE_UPDATE__?.(), {
+				passive: true,
+			});
+			window.addEventListener('resize', () => (window as any).__SITE_TOC_ACTIVE_UPDATE__?.());
+			document.addEventListener('astro:page-load', () => {
+				requestAnimationFrame(() => (window as any).__SITE_TOC_ACTIVE_UPDATE__?.());
+			});
+		}
 		update();
-		window.addEventListener('scroll', update, { passive: true });
-		window.addEventListener('resize', update);
 	};
 
 	if (document.readyState === 'loading') {

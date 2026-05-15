@@ -12,6 +12,10 @@ const dynamicNav: NavItem[] = [...siteConfig.nav];
 if (settings.site_features.social.linkCard) {
 	dynamicNav.push({ href: '/links', label: '链接' });
 }
+const mobileNav: NavItem[] = [...dynamicNav];
+if (settings.site_features.tools.timeMachine) {
+	mobileNav.push({ href: '/time-machine', label: '时光机' });
+}
 ---
 
 <header class="site-header">
@@ -45,37 +49,12 @@ if (settings.site_features.social.linkCard) {
 	<div class="nav-drop" id="nav-drawer" data-nav-drawer aria-hidden="true">
 		<div class="nav-drop-inner">
 			<nav class="nav-drop-nav" aria-label="移动端导航">
-				{dynamicNav.map((item) => (
+				{mobileNav.map((item) => (
 					<a class="nav-drop-link" href={withBase(item.href)}>
 						{item.label}
 					</a>
 				))}
 			</nav>
-			{
-				settings.site_features.tools.sidebar ? (
-					<section class="mobile-drawer-side" aria-label="快捷面板">
-						<div class="mobile-drawer-title muted">{settings.site_texts.sidebarTitle}</div>
-						<div class="mobile-drawer-grid">
-							<div class="mobile-drawer-card">
-								<div class="muted">{settings.site_texts.sidebarStatusLabel}</div>
-								<div class="badge">{settings.site_texts.sidebarStatusValue}</div>
-							</div>
-							{
-								settings.site_features.tools.timeMachine ? (
-									<div class="mobile-drawer-card">
-										<div class="muted">快捷入口</div>
-										<a class="nav-drop-link side-link" href={withBase('/time-machine')}>时光机</a>
-									</div>
-								) : null
-							}
-							<div class="mobile-drawer-card">
-								<div class="muted">{settings.site_texts.sidebarActivityLabel}</div>
-								<div class="muted">{settings.site_texts.sidebarActivityHint}</div>
-							</div>
-						</div>
-					</section>
-				) : null
-			}
 		</div>
 	</div>
 	<script is:inline>
@@ -246,35 +225,6 @@ if (settings.site_features.social.linkCard) {
 		text-decoration: none;
 	}
 
-	.mobile-drawer-side {
-		display: none;
-		gap: 10px;
-		padding-top: 4px;
-	}
-
-	.mobile-drawer-title {
-		font-size: 12px;
-		letter-spacing: 0.2px;
-	}
-
-	.mobile-drawer-grid {
-		display: grid;
-		gap: 8px;
-	}
-
-	.mobile-drawer-card {
-		display: grid;
-		gap: 8px;
-		padding: 12px;
-		border-radius: 12px;
-		border: 1px solid var(--border);
-		background: color-mix(in oklab, var(--panel-strong), transparent 18%);
-	}
-
-	.side-link {
-		justify-content: center;
-	}
-
 	.nav-drop-link:hover {
 		text-decoration: none;
 		border-color: color-mix(in oklab, var(--accent), var(--border) 35%);
@@ -300,9 +250,6 @@ if (settings.site_features.social.linkCard) {
 		}
 		.nav-drop {
 			display: block;
-		}
-		.mobile-drawer-side {
-			display: grid;
 		}
 	}
 </style>

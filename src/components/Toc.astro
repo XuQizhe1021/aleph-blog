@@ -7,12 +7,12 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 ---
 
 {variant === 'drawer' ? (
-	<section class="toc-drawer panel" aria-label="目录" data-open="0" data-toc-root>
-		<button class="toc-drawer-head" type="button" aria-expanded="false">
+	<section class="toc-drawer panel" aria-label="目录" data-open="0" data-toc-mode="drawer" data-toc-root>
+		<button class="toc-drawer-head" type="button" aria-expanded="false" data-toc-toggle>
 			<span class="toc-title">目录</span>
 			<span class="chev" aria-hidden="true">⌄</span>
 		</button>
-		<div class="toc-body-wrap">
+		<div class="toc-body-wrap" data-toc-panel>
 			<nav class="toc-body">
 				{visible.length ? (
 					<ul>
@@ -27,47 +27,16 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 				)}
 			</nav>
 		</div>
-		<script is:inline>
-			(() => {
-				const root = document.currentScript?.parentElement;
-				if (!root) return;
-				const btn = root.querySelector('.toc-drawer-head');
-				const wrap = root.querySelector('.toc-body-wrap');
-				if (!(btn instanceof HTMLButtonElement) || !(wrap instanceof HTMLElement)) return;
-
-				const computeOpenHeight = () => {
-					const cap = Math.floor(window.innerHeight * 0.55);
-					return Math.min(wrap.scrollHeight, cap);
-				};
-
-				const setOpen = (open) => {
-					root.dataset.open = open ? '1' : '0';
-					btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-					if (open) {
-						wrap.style.maxHeight = `${computeOpenHeight()}px`;
-					} else {
-						wrap.style.maxHeight = '0px';
-					}
-				};
-
-				setOpen(false);
-				btn.addEventListener('click', () => setOpen(root.dataset.open !== '1'));
-				window.addEventListener('resize', () => {
-					if (root.dataset.open === '1') wrap.style.maxHeight = `${computeOpenHeight()}px`;
-				});
-				root.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
-			})();
-		</script>
 	</section>
 ) : variant === 'floating' ? (
-	<section class="toc-float" aria-label="目录" data-open="0" data-toc-root>
-		<button class="toc-float-btn" type="button" aria-expanded="false">
+	<section class="toc-float" aria-label="目录" data-open="0" data-toc-mode="floating" data-toc-root>
+		<button class="toc-float-btn" type="button" aria-expanded="false" data-toc-toggle>
 			<span class="toc-float-btn-text">目录</span>
 		</button>
-		<div class="toc-float-panel panel" aria-hidden="true">
+		<div class="toc-float-panel panel" aria-hidden="true" data-toc-panel>
 			<div class="toc-float-head">
 				<div class="toc-title">目录</div>
-				<button class="btn toc-float-close" type="button">关闭</button>
+				<button class="btn toc-float-close" type="button" data-toc-close>关闭</button>
 			</div>
 			<nav class="toc-body">
 				{visible.length ? (
@@ -83,30 +52,6 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 				)}
 			</nav>
 		</div>
-		<script is:inline>
-			(() => {
-				const root = document.currentScript?.parentElement;
-				if (!root) return;
-				const openBtn = root.querySelector('.toc-float-btn');
-				const closeBtn = root.querySelector('.toc-float-close');
-				const panel = root.querySelector('.toc-float-panel');
-				if (!(openBtn instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
-
-				const setOpen = (open) => {
-					root.dataset.open = open ? '1' : '0';
-					openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-					panel.setAttribute('aria-hidden', open ? 'false' : 'true');
-				};
-
-				setOpen(false);
-				openBtn.addEventListener('click', () => setOpen(root.dataset.open !== '1'));
-				if (closeBtn instanceof HTMLButtonElement) closeBtn.addEventListener('click', () => setOpen(false));
-				window.addEventListener('keydown', (e) => {
-					if (e.key === 'Escape') setOpen(false);
-				});
-				root.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
-			})();
-		</script>
 	</section>
 ) : (
 	<aside class="toc panel" aria-label="目录" data-toc-root>
@@ -334,6 +279,68 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 <script>
 	import { pickActiveTocHeading } from '../utils/toc-active';
 
+	const bindTocInteractions = () => {
+		if ((window as any).__SITE_TOC_INTERACTION_BINDED__) return;
+		(window as any).__SITE_TOC_INTERACTION_BINDED__ = true;
+
+		const computeDrawerHeight = (panel: HTMLElement) => {
+			const cap = Math.floor(window.innerHeight * 0.55);
+			return Math.min(panel.scrollHeight, cap);
+		};
+
+		const setOpen = (root: Element, open: boolean) => {
+			if (!(root instanceof HTMLElement)) return;
+			root.dataset.open = open ? '1' : '0';
+			const toggle = root.querySelector('[data-toc-toggle]');
+			if (toggle instanceof HTMLButtonElement) {
+				toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+			}
+			const panel = root.querySelector('[data-toc-panel]');
+			if (!(panel instanceof HTMLElement)) return;
+			if (root.dataset.tocMode === 'drawer') {
+				panel.style.maxHeight = open ? `${computeDrawerHeight(panel)}px` : '0px';
+			} else {
+				panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+			}
+		};
+
+		const syncAll = () => {
+			document.querySelectorAll('[data-toc-root]').forEach((root) => setOpen(root, root.dataset.open === '1'));
+		};
+
+		document.addEventListener('click', (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const toggle = target.closest('[data-toc-toggle]');
+			if (toggle) {
+				const root = toggle.closest('[data-toc-root]');
+				if (!root) return;
+				setOpen(root, root.dataset.open !== '1');
+				return;
+			}
+			const close = target.closest('[data-toc-close]');
+			if (close) {
+				const root = close.closest('[data-toc-root]');
+				if (!root) return;
+				setOpen(root, false);
+				return;
+			}
+			const link = target.closest('[data-toc-root] a[data-toc-link]');
+			if (link) {
+				const root = link.closest('[data-toc-root]');
+				if (root) setOpen(root, false);
+			}
+		});
+
+		window.addEventListener('keydown', (event) => {
+			if (event.key !== 'Escape') return;
+			document.querySelectorAll('[data-toc-root]').forEach((root) => setOpen(root, false));
+		});
+		window.addEventListener('resize', syncAll);
+		document.addEventListener('astro:page-load', syncAll);
+		syncAll();
+	};
+
 	const run = () => {
 		const settings = (window as any).__SITE_SETTINGS__;
 		if (!settings?.site_features?.content?.tocEnhanced) return;
@@ -361,8 +368,16 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 	};
 
 	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', run, { once: true });
+		document.addEventListener(
+			'DOMContentLoaded',
+			() => {
+				bindTocInteractions();
+				run();
+			},
+			{ once: true }
+		);
 	} else {
+		bindTocInteractions();
 		run();
 	}
 </script>

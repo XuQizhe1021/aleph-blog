@@ -76,30 +76,39 @@ const enableGiscus = shouldEnableGiscus(settings, 'post');
 		</div>
 	</article>
 	<div class="scroll-jump">
-		<button class="scroll-btn" type="button" id="scroll-top" aria-label="回到顶部">↑</button>
-		<button class="scroll-btn" type="button" id="scroll-bottom" aria-label="回到底部">↓</button>
+		<button class="scroll-btn" type="button" data-scroll-top aria-label="回到顶部">↑</button>
+		<button class="scroll-btn" type="button" data-scroll-bottom aria-label="回到底部">↓</button>
 	</div>
 	<script is:inline>
 		(() => {
-			const topBtn = document.getElementById('scroll-top');
-			const bottomBtn = document.getElementById('scroll-bottom');
-			const progressBar = document.getElementById('reading-progress-bar');
 			const updateProgress = () => {
+				const progressBar = document.getElementById('reading-progress-bar');
 				if (!(progressBar instanceof HTMLElement)) return;
 				const doc = document.documentElement;
 				const scrollable = Math.max(1, doc.scrollHeight - window.innerHeight);
 				const progress = Math.min(1, Math.max(0, window.scrollY / scrollable));
 				progressBar.style.transform = `scaleX(${progress})`;
 			};
-			topBtn?.addEventListener('click', () => {
-				window.scrollTo({ top: 0, behavior: 'smooth' });
-			});
-			bottomBtn?.addEventListener('click', () => {
-				window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-			});
+
+			if (!window.__SITE_POST_ACTIONS_BINDED__) {
+				window.__SITE_POST_ACTIONS_BINDED__ = true;
+				document.addEventListener('click', (event) => {
+					const target = event.target;
+					if (!(target instanceof Element)) return;
+					if (target.closest('[data-scroll-top]')) {
+						window.scrollTo({ top: 0, behavior: 'smooth' });
+						return;
+					}
+					if (target.closest('[data-scroll-bottom]')) {
+						window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+					}
+				});
+				window.addEventListener('scroll', updateProgress, { passive: true });
+				window.addEventListener('resize', updateProgress);
+				document.addEventListener('astro:page-load', updateProgress);
+			}
+
 			updateProgress();
-			window.addEventListener('scroll', updateProgress, { passive: true });
-			window.addEventListener('resize', updateProgress);
 		})();
 	</script>
 </Layout>

@@ -1,10 +1,10 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getPublicPosts, getAllCategories } from '../../utils/blog';
+import { getPublicPosts, getCategorySummaries } from '../../utils/blog';
 import { withBase } from '../../utils/paths';
 
 const posts = await getPublicPosts();
-const categories = getAllCategories(posts);
+const categories = getCategorySummaries(posts);
 ---
 
 <Layout title="分类">
@@ -25,7 +25,10 @@ const categories = getAllCategories(posts);
 			categories.map((c) => (
 				<a class="cat panel" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
 					<div class="name">{c.category}</div>
-					<div class="muted">{c.count} 篇</div>
+					<div class="meta-row">
+						<div class="muted">{c.count} 篇</div>
+						<div class="cat-date muted">最近更新 {c.latestDate.toLocaleDateString('zh-CN')}</div>
+					</div>
 				</a>
 			))
 		) : (
@@ -116,7 +119,7 @@ const categories = getAllCategories(posts);
 	.cat {
 		padding: 16px;
 		display: grid;
-		gap: 6px;
+		gap: 10px;
 		text-decoration: none;
 	}
 
@@ -127,6 +130,15 @@ const categories = getAllCategories(posts);
 
 	.name {
 		font-weight: 750;
+	}
+
+	.meta-row {
+		display: grid;
+		gap: 4px;
+	}
+
+	.cat-date {
+		font-size: 12px;
 	}
 
 	@media (max-width: 980px) {
@@ -152,4 +164,3 @@ const categories = getAllCategories(posts);
 		}
 	}
 </style>
-

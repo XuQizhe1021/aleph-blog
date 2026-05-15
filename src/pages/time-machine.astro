@@ -1,17 +1,75 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getPublicPosts } from '../utils/blog';
+import { getPublicPosts, getPostActivityDate, getPrimaryCategory } from '../utils/blog';
 import { withBase } from '../utils/paths';
 import { getSiteSettings } from '../config/site-settings';
 
 const settings = await getSiteSettings();
 const posts = await getPublicPosts();
-const rows = posts.map((post) => ({
-	slug: post.slug,
-	title: post.data.title,
-	date: post.data.pubDate.toISOString(),
-	category: post.data.categories?.[0] ?? '未分类',
-}));
+const rows = posts
+	.map((post) => {
+		const date = getPostActivityDate(post);
+		const year = String(date.getFullYear());
+		const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+		return {
+			slug: post.slug,
+			title: post.data.title,
+			date,
+			year,
+			month,
+			category: getPrimaryCategory(post),
+		};
+	})
+	.sort((a, b) => b.date.getTime() - a.date.getTime() || a.title.localeCompare(b.title, 'zh-CN'));
+const yearMap = new Map<
+	string,
+	{
+		year: string;
+		anchorId: string;
+		total: number;
+		months: Array<{
+			key: string;
+			label: string;
+			total: number;
+			rows: typeof rows;
+		}>;
+	}
+>();
+
+for (const row of rows) {
+	const yearKey = row.year;
+	const monthKey = row.month;
+	let yearBucket = yearMap.get(yearKey);
+	if (!yearBucket) {
+		yearBucket = {
+			year: yearKey,
+			anchorId: `year-${yearKey}`,
+			total: 0,
+			months: [],
+		};
+		yearMap.set(yearKey, yearBucket);
+	}
+	yearBucket.total += 1;
+	let monthBucket = yearBucket.months.find((item) => item.key === monthKey);
+	if (!monthBucket) {
+		monthBucket = {
+			key: monthKey,
+			label: new Date(`${monthKey}-01T00:00:00`).toLocaleDateString('zh-CN', {
+				month: 'long',
+			}),
+			total: 0,
+			rows: [],
+		};
+		yearBucket.months.push(monthBucket);
+	}
+	monthBucket.total += 1;
+	monthBucket.rows.push(row);
+}
+
+const timelineGroups = [...yearMap.values()].sort((a, b) => Number(b.year) - Number(a.year));
+for (const group of timelineGroups) {
+	group.months.sort((a, b) => b.key.localeCompare(a.key));
+}
 ---
 
 <Layout title="时光机">
@@ -22,51 +80,53 @@ const rows = posts.map((post) => ({
 		</div>
 		{
 			settings.site_features.tools.timeMachine ? (
-				<div class="timeline" id="timeline" data-rows={JSON.stringify(rows)}></div>
+				<>
+					<nav class="year-nav" aria-label="年份锚点">
+						{timelineGroups.map((group) => (
+							<a class="year-anchor" href={`#${group.anchorId}`}>
+								<span>{group.year}</span>
+								<span class="year-anchor-count muted">{group.total}</span>
+							</a>
+						))}
+					</nav>
+					<div class="timeline">
+						{timelineGroups.map((group, groupIndex) => (
+							<section class="year-block" id={group.anchorId}>
+								<div class="year-title-row">
+									<h2 class="year-title">{group.year}</h2>
+									<div class="muted">{group.total} 篇</div>
+								</div>
+								<div class="month-stack">
+									{group.months.map((month, monthIndex) => (
+										<details class="month-group" open={groupIndex === 0 && monthIndex === 0}>
+											<summary class="month-summary">
+												<span class="month-label">{month.label}</span>
+												<span class="month-meta muted">{month.total} 条记录</span>
+											</summary>
+											<div class="month-list">
+												{month.rows.map((row) => (
+													<a class="item panel" href={`${withBase('/posts')}/${encodeURIComponent(row.slug)}`}>
+														<div class="item-main">
+															<div class="title">{row.title}</div>
+															<div class="item-date muted">
+																{row.date.toLocaleDateString('zh-CN')} · {row.category}
+															</div>
+														</div>
+													</a>
+												))}
+											</div>
+										</details>
+									))}
+								</div>
+							</section>
+						))}
+					</div>
+				</>
 			) : (
 				<div class="muted">该功能已在后台关闭。</div>
 			)
 		}
 	</section>
-
-	<script is:inline define:vars={{ base: withBase('/posts') }}>
-		(() => {
-			const root = document.getElementById('timeline');
-			if (!(root instanceof HTMLElement)) return;
-			const rows = JSON.parse(root.dataset.rows || '[]');
-			let page = 0;
-			let pageSize = 12;
-			const render = () => {
-				const start = page * pageSize;
-				const sliced = rows.slice(start, start + pageSize);
-				root.innerHTML = `
-					${sliced
-						.map(
-							(item) => `
-						<a class="item panel" href="${base}/${encodeURIComponent(item.slug)}">
-							<div class="title">${item.title}</div>
-							<div class="muted">${new Date(item.date).toLocaleDateString('zh-CN')} · ${item.category}</div>
-						</a>`
-						)
-						.join('')}
-					<div class="pager">
-						<button class="btn" type="button" data-prev ${page <= 0 ? 'disabled' : ''}>上一页</button>
-						<div class="muted">${page + 1} / ${Math.max(1, Math.ceil(rows.length / pageSize))}</div>
-						<button class="btn" type="button" data-next ${start + pageSize >= rows.length ? 'disabled' : ''}>下一页</button>
-					</div>
-				`;
-				root.querySelector('[data-prev]')?.addEventListener('click', () => {
-					page = Math.max(0, page - 1);
-					render();
-				});
-				root.querySelector('[data-next]')?.addEventListener('click', () => {
-					page += 1;
-					render();
-				});
-			};
-			render();
-		})();
-	</script>
 </Layout>
 
 <style>
@@ -85,9 +145,106 @@ const rows = posts.map((post) => ({
 		margin: 0;
 	}
 
+	.year-nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.year-anchor {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		height: 30px;
+		padding: 0 12px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 18%);
+		text-decoration: none;
+		font-size: 13px;
+	}
+
+	.year-anchor:hover {
+		text-decoration: none;
+		border-color: color-mix(in oklab, var(--accent), var(--border) 34%);
+	}
+
+	.year-anchor-count {
+		font-size: 12px;
+	}
+
 	.timeline {
 		display: grid;
+		gap: 18px;
+	}
+
+	.year-block {
+		display: grid;
+		gap: 12px;
+		scroll-margin-top: 92px;
+	}
+
+	.year-title-row {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+		padding-top: 4px;
+	}
+
+	.year-title {
+		margin: 0;
+		font-size: 22px;
+	}
+
+	.month-stack {
+		display: grid;
 		gap: 10px;
+	}
+
+	.month-group {
+		border: 1px solid var(--border);
+		border-radius: 16px;
+		background: color-mix(in oklab, var(--panel-strong), transparent 20%);
+		overflow: hidden;
+	}
+
+	.month-summary {
+		list-style: none;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 14px 16px;
+		cursor: pointer;
+	}
+
+	.month-summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.month-summary::after {
+		content: '';
+		width: 8px;
+		height: 8px;
+		border-right: 1.5px solid currentColor;
+		border-bottom: 1.5px solid currentColor;
+		transform: rotate(45deg);
+		opacity: 0.55;
+		transition: transform 180ms ease;
+	}
+
+	.month-group[open] .month-summary::after {
+		transform: rotate(225deg);
+	}
+
+	.month-label {
+		font-weight: 650;
+	}
+
+	.month-meta {
+		margin-left: auto;
+		font-size: 12px;
 	}
 
 	.item {
@@ -101,11 +258,29 @@ const rows = posts.map((post) => ({
 		font-weight: 700;
 	}
 
-	.pager {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
+	.month-list {
+		display: grid;
 		gap: 10px;
+		padding: 0 12px 12px;
+	}
+
+	.item-main {
+		display: grid;
+		gap: 6px;
+	}
+
+	.item-date {
+		font-size: 13px;
+	}
+
+	@media (max-width: 720px) {
+		.month-summary {
+			padding: 12px 14px;
+		}
+		.year-title-row {
+			flex-direction: column;
+			align-items: start;
+			gap: 4px;
+		}
 	}
 </style>
-

@@ -6,9 +6,15 @@
 	--muted: rgba(255, 255, 255, 0.72);
 	--border: rgba(255, 255, 255, 0.12);
 	--accent: #7c3aed;
-	--accent2: #22c55e;
-	--shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+	--accent2: #a78bfa;
+	--shadow: 0 18px 60px rgba(6, 7, 16, 0.45);
 	--radius: 14px;
+	--font-display:
+		'Space Grotesk', 'Noto Sans SC', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+		'PingFang SC', 'Microsoft YaHei', sans-serif;
+	--font-body:
+		'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', ui-sans-serif, system-ui, -apple-system,
+		'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 	--mono:
 		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
 		monospace;
@@ -27,18 +33,42 @@ body {
 	margin: 0;
 	background:
 		radial-gradient(1200px 600px at 20% 20%, rgba(124, 58, 237, 0.25), transparent 60%),
-		radial-gradient(1000px 520px at 80% 15%, rgba(34, 197, 94, 0.18), transparent 55%),
+		radial-gradient(1000px 520px at 80% 15%, rgba(167, 139, 250, 0.16), transparent 55%),
 		var(--bg);
 	color: var(--text);
-	font-family:
-		ui-sans-serif,
-		system-ui,
-		-apple-system,
-		Segoe UI,
-		Roboto,
-		Helvetica,
-		Arial,
-		'Noto Sans';
+	font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--font-display);
+	letter-spacing: -0.01em;
+	text-wrap: balance;
+}
+
+.brand,
+.viewer-title,
+.admin-nav-title,
+.name,
+.item-title,
+.start-name,
+.settings-group-title,
+.modal-title {
+	font-family: var(--font-display);
+}
+
+.count {
+	font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--accent), transparent 30%);
+	outline-offset: 2px;
+	border-radius: 4px;
 }
 
 a {
@@ -69,6 +99,11 @@ a {
 	color: var(--text);
 	cursor: pointer;
 	font-size: 13px;
+	transition:
+		border-color 180ms ease,
+		background-color 180ms ease,
+		color 180ms ease,
+		transform 120ms ease;
 }
 
 .btn:disabled {
@@ -78,6 +113,10 @@ a {
 
 .btn:hover:not(:disabled) {
 	border-color: color-mix(in oklab, var(--accent), var(--border) 40%);
+}
+
+.btn:active:not(:disabled) {
+	transform: translateY(1px) scale(0.98);
 }
 
 .btn.danger:hover:not(:disabled) {

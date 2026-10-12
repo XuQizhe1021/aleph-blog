@@ -6,8 +6,8 @@
 	--muted: rgba(255, 255, 255, 0.72);
 	--border: rgba(255, 255, 255, 0.12);
 	--accent: #7c3aed;
-	--accent2: #22c55e;
-	--shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+	--accent2: #a78bfa;
+	--shadow: 0 18px 60px rgba(6, 7, 16, 0.45);
 	--radius: 14px;
 	--code-scroll-track: rgba(255, 255, 255, 0.08);
 	--code-scroll-thumb: rgba(255, 255, 255, 0.28);
@@ -15,6 +15,12 @@
 	--site-scroll-track: color-mix(in oklab, var(--panel-strong), transparent 38%);
 	--site-scroll-thumb: color-mix(in oklab, var(--accent), var(--panel-strong) 58%);
 	--site-scroll-thumb-hover: color-mix(in oklab, var(--accent2), var(--accent) 45%);
+	--font-display:
+		'Space Grotesk', 'Noto Sans SC', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+		'PingFang SC', 'Microsoft YaHei', sans-serif;
+	--font-body:
+		'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', ui-sans-serif, system-ui, -apple-system,
+		'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 	--mono:
 		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
 		monospace;
@@ -28,7 +34,7 @@
 	--muted: rgba(18, 20, 26, 0.68);
 	--border: rgba(18, 20, 26, 0.12);
 	--accent: #6d28d9;
-	--accent2: #16a34a;
+	--accent2: #8b5cf6;
 	--shadow: 0 18px 60px rgba(20, 24, 45, 0.15);
 	--code-scroll-track: rgba(18, 20, 26, 0.08);
 	--code-scroll-thumb: rgba(18, 20, 26, 0.28);
@@ -77,17 +83,37 @@ body {
 	margin: 0;
 	color: var(--text);
 	background: var(--bg);
-	font-family:
-		ui-sans-serif,
-		system-ui,
-		-apple-system,
-		Segoe UI,
-		Roboto,
-		Helvetica,
-		Arial,
-		'Noto Sans',
-		'Apple Color Emoji',
-		'Segoe UI Emoji';
+	font-family: var(--font-body);
+}
+
+/* 标题使用更具辨识度的展示字体，正文保持清晰易读的中文无衬线。 */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--font-display);
+	letter-spacing: -0.01em;
+	text-wrap: balance;
+}
+
+.title,
+.brand-text,
+.brand,
+.stat-v,
+.article-title,
+.hero-title,
+.year-title,
+.name,
+.cat-name,
+.post-title {
+	font-family: var(--font-display);
+}
+
+.stat-v,
+time {
+	font-variant-numeric: tabular-nums;
 }
 
 /* 自定义鼠标皮肤：按主题写入 CSS 变量，统一覆盖普通/点击/加载三种形态。 */
@@ -120,44 +146,22 @@ body::before {
 	inset: 0;
 	pointer-events: none;
 	z-index: -1;
-	opacity: 0.42;
 	background:
-		linear-gradient(
-			90deg,
-			#ff3b30,
-			#ff9500,
-			#ffd60a,
-			#34c759,
-			#32ade6,
-			#007aff,
-			#af52de,
-			#007aff,
-			#32ade6,
-			#34c759,
-			#ffd60a,
-			#ff9500,
-			#ff3b30
-		);
-	background-size: 420% 420%;
-	-webkit-mask-image:
-		repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 44px),
-		repeating-linear-gradient(90deg, #000 0 1px, transparent 1px 44px);
-	-webkit-mask-position: 0 0, 0 0;
-	-webkit-mask-repeat: repeat, repeat;
-	filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.2)) saturate(1.15);
-	animation: grid-flow 12s linear infinite;
+		radial-gradient(1000px 560px at 12% -8%, color-mix(in oklab, var(--accent), transparent 88%), transparent 62%),
+		radial-gradient(880px 520px at 96% 4%, color-mix(in oklab, var(--accent2), transparent 90%), transparent 58%),
+		radial-gradient(760px 480px at 50% 108%, color-mix(in oklab, var(--accent), transparent 91%), transparent 60%);
 }
 
-@keyframes grid-flow {
-	0% {
-		background-position: 0% 50%;
-	}
-	50% {
-		background-position: 100% 50%;
-	}
-	100% {
-		background-position: 0% 50%;
-	}
+/* 极淡的噪点纹理，打破纯色背景的扁平感。 */
+body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: -1;
+	opacity: 0.04;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	background-size: 140px 140px;
 }
 
 a {
@@ -201,10 +205,25 @@ a:hover {
 	background: color-mix(in oklab, var(--panel-strong), transparent 15%);
 	color: var(--text);
 	cursor: pointer;
+	transition:
+		border-color 180ms ease,
+		background-color 180ms ease,
+		color 180ms ease,
+		transform 120ms ease;
 }
 
 .btn:hover {
 	border-color: color-mix(in oklab, var(--accent), var(--border) 40%);
+}
+
+.btn:active {
+	transform: translateY(1px) scale(0.98);
+}
+
+:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--accent), transparent 30%);
+	outline-offset: 2px;
+	border-radius: 4px;
 }
 
 .muted {
@@ -315,8 +334,8 @@ a:hover {
 	z-index: 500;
 	background:
 		radial-gradient(circle at 15% 15%, rgba(124, 58, 237, 0.22), transparent 30%),
-		radial-gradient(circle at 85% 18%, rgba(34, 197, 94, 0.2), transparent 32%),
-		radial-gradient(circle at 50% 82%, rgba(99, 102, 241, 0.16), transparent 28%);
+		radial-gradient(circle at 85% 18%, rgba(167, 139, 250, 0.2), transparent 32%),
+		radial-gradient(circle at 50% 82%, rgba(139, 92, 246, 0.16), transparent 28%);
 	animation: festival-fade 1.8s ease forwards;
 }
 

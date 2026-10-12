@@ -22,12 +22,10 @@ import { withBase } from '../utils/paths';
 					root.style.setProperty('--site-header-height', `${header.offsetHeight}px`);
 				}
 			};
-			// 顶栏滚动收缩：滚动后压扁高度并加深阴影，模拟软件化窗口栏。
-			// 同步更新 --site-header-height，保证 dock 与正文偏移跟随收缩后的高度。
+			// 顶栏滚动状态：仅增强阴影，保持高度恒定，避免 dock 与 TOC 因高度变化跟着跳动。
 			const onScroll = () => {
 				const scrolled = window.scrollY > 10;
 				root.dataset.scrolled = scrolled ? '1' : '0';
-				root.style.setProperty('--site-header-height', scrolled ? '48px' : '56px');
 			};
 
 			if (!window.__SITE_HEADER_BINDED__) {
@@ -66,7 +64,6 @@ import { withBase } from '../utils/paths';
 	}
 
 	html[data-scrolled='1'] .site-header {
-		height: 48px;
 		box-shadow: 0 10px 30px color-mix(in oklab, var(--bg), transparent 30%);
 	}
 

@@ -24,12 +24,12 @@ const settings = await getSiteSettings();
 const enableGiscus = shouldEnableGiscus(settings, 'post');
 ---
 
-<Layout title={post.data.title} description={post.data.description}>
+<Layout title={post.data.title} description={post.data.description} wide>
 	<div class="reading-progress" aria-hidden="true">
 		<div class="reading-progress-bar" id="reading-progress-bar"></div>
 	</div>
 	<article class="article">
-		<header class="article-head panel">
+		<header class="article-head panel" id="article-head">
 			<h1 class="article-title">{post.data.title}</h1>
 			<div class="article-meta muted">
 				<time datetime={post.data.pubDate.toISOString()}>
@@ -90,6 +90,31 @@ const enableGiscus = shouldEnableGiscus(settings, 'post');
 				progressBar.style.transform = `scaleX(${progress})`;
 			};
 
+			// 标题卡片吸顶压缩：滚动越过其自然位置后切换为一行紧凑态。
+			const headEl = () => document.getElementById('article-head');
+			// 用 offsetTop 累加得到静态（吸顶前）的文档位置，避免吸顶后 getBoundingClientRect 失真。
+			const docTop = (el) => {
+				let top = 0;
+				let node = el;
+				while (node instanceof HTMLElement) {
+					top += node.offsetTop;
+					node = node.offsetParent;
+				}
+				return top;
+			};
+			let headThreshold = 0;
+			const measureHead = () => {
+				const el = headEl();
+				if (!(el instanceof HTMLElement)) return;
+				const stickyTop = parseFloat(getComputedStyle(el).top) || 56;
+				headThreshold = docTop(el) - stickyTop;
+			};
+			const updateHead = () => {
+				const el = headEl();
+				if (!(el instanceof HTMLElement)) return;
+				el.classList.toggle('is-stuck', window.scrollY > headThreshold);
+			};
+
 			if (!window.__SITE_POST_ACTIONS_BINDED__) {
 				window.__SITE_POST_ACTIONS_BINDED__ = true;
 				document.addEventListener('click', (event) => {
@@ -103,11 +128,27 @@ const enableGiscus = shouldEnableGiscus(settings, 'post');
 						window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 					}
 				});
-				window.addEventListener('scroll', updateProgress, { passive: true });
-				window.addEventListener('resize', updateProgress);
-				document.addEventListener('astro:page-load', updateProgress);
+				window.addEventListener(
+					'scroll',
+					() => {
+						updateProgress();
+						updateHead();
+					},
+					{ passive: true }
+				);
+				window.addEventListener('resize', () => {
+					updateProgress();
+					measureHead();
+				});
+				document.addEventListener('astro:page-load', () => {
+					updateProgress();
+					measureHead();
+					updateHead();
+				});
 			}
 
+			measureHead();
+			updateHead();
 			updateProgress();
 		})();
 	</script>
@@ -138,25 +179,43 @@ const enableGiscus = shouldEnableGiscus(settings, 'post');
 	}
 
 	.article {
+		max-width: 1360px;
+		margin: 0 auto;
 		display: grid;
 		gap: 14px;
 	}
 
+	/* 标题卡片：常态为完整标题区，吸顶后压缩为一行紧凑条。 */
 	.article-head {
-		padding: 18px;
+		padding: 24px 26px;
+		position: sticky;
+		top: var(--site-header-height, 56px);
+		z-index: 85;
+		display: grid;
+		gap: 12px;
+		transition:
+			padding 240ms ease,
+			gap 240ms ease,
+			box-shadow 240ms ease;
 	}
 
 	.article-title {
-		margin: 0 0 10px;
-		font-size: clamp(22px, 4vw, 34px);
+		margin: 0;
+		font-size: clamp(24px, 4vw, 34px);
 		letter-spacing: 0.2px;
+		line-height: 1.25;
+		transition:
+			font-size 240ms ease,
+			line-height 240ms ease;
 	}
 
 	.article-meta {
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
 		gap: 10px;
 		font-size: 13px;
+		transition: font-size 240ms ease;
 	}
 
 	.dot {
@@ -174,21 +233,50 @@ const enableGiscus = shouldEnableGiscus(settings, 'post');
 	}
 
 	.article-tags {
-		margin-top: 12px;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 8px;
+		transition: opacity 180ms ease;
+	}
+
+	/* 吸顶压缩态：变矮，标题、时间、分类等收拢为一行铺满宽度。 */
+	.article-head.is-stuck {
+		padding: 10px 18px;
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		box-shadow: 0 12px 30px color-mix(in oklab, var(--bg), transparent 30%);
+	}
+
+	.article-head.is-stuck .article-title {
+		flex: 1;
+		min-width: 0;
+		font-size: 16px;
+		line-height: 1.4;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.article-head.is-stuck .article-meta {
+		flex: none;
+		font-size: 12px;
+		white-space: nowrap;
+	}
+
+	.article-head.is-stuck .article-tags {
+		display: none;
 	}
 
 	.article-body {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) 280px;
-		gap: 14px;
+		gap: 28px;
 		align-items: start;
 	}
 
 	.content {
-		padding: 18px;
+		padding: 22px 24px;
 		min-width: 0;
 		overflow: hidden;
 	}
@@ -198,6 +286,7 @@ const enableGiscus = shouldEnableGiscus(settings, 'post');
 		gap: 14px;
 		align-content: start;
 		min-width: 0;
+		max-width: 760px;
 	}
 
 	.prose {
@@ -223,7 +312,13 @@ const enableGiscus = shouldEnableGiscus(settings, 'post');
 		.article-body {
 			grid-template-columns: 1fr;
 		}
+		.main-col {
+			max-width: none;
+		}
 		.side {
+			display: none;
+		}
+		.article-head.is-stuck .article-meta {
 			display: none;
 		}
 	}

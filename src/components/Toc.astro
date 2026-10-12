@@ -78,8 +78,8 @@ const visible = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 	.toc {
 		padding: 14px;
 		position: sticky;
-		top: 78px;
-		max-height: calc(100vh - 110px);
+		top: calc(var(--site-header-height, 56px) + 48px);
+		max-height: calc(100vh - var(--site-header-height, 56px) - 80px);
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;

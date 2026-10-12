@@ -30,10 +30,11 @@ const postSortMeta = posts.map((post) => ({
 	<section class="filters panel">
 		<div class="filter-head">
 			<div class="label muted">分类</div>
-			<div class="sort-switch" aria-label="排序方式">
-				<button class="sort-chip is-active" type="button" data-sort-toggle="latest">最新</button>
-				<button class="sort-chip" type="button" data-sort-toggle="updated">最近更新</button>
-				<button class="sort-chip" type="button" data-sort-toggle="title">标题</button>
+			<div class="seg sort-switch" aria-label="排序方式">
+				<span class="seg-bubble" aria-hidden="true"></span>
+				<button class="seg-opt is-active" type="button" data-sort-toggle="latest">最新</button>
+				<button class="seg-opt" type="button" data-sort-toggle="updated">最近更新</button>
+				<button class="seg-opt" type="button" data-sort-toggle="title">标题</button>
 			</div>
 		</div>
 		<div class="chips">
@@ -91,6 +92,7 @@ const postSortMeta = posts.map((post) => ({
 					btn.classList.toggle('is-active', active);
 					btn.setAttribute('aria-pressed', active ? 'true' : 'false');
 				});
+				window.__SITE_REPOSITION_SEGS__?.();
 			};
 			const applySort = () => {
 				const sorted = items.slice().sort((a, b) => {
@@ -219,43 +221,13 @@ const postSortMeta = posts.map((post) => ({
 	}
 
 	.sort-switch {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 4px;
-		border-radius: 999px;
-		border: 1px solid var(--border);
-		background: color-mix(in oklab, var(--panel-strong), transparent 18%);
+		/* 视觉样式交由全局 .seg，这里仅补充响应式行为 */
 	}
 
-	.sort-chip {
-		height: 28px;
-		padding: 0 12px;
-		border: 0;
-		border-radius: 999px;
-		background: transparent;
-		color: var(--muted);
-		cursor: pointer;
+	.sort-switch .seg-opt {
 		font-size: 12px;
-		transition:
-			background-color 180ms ease,
-			color 180ms ease,
-			box-shadow 180ms ease;
-	}
-
-	.sort-chip:hover {
-		color: var(--text);
-	}
-
-	.sort-chip.is-active {
-		color: var(--text);
-		background:
-			linear-gradient(
-				90deg,
-				color-mix(in oklab, var(--accent), transparent 18%),
-				color-mix(in oklab, var(--accent2), transparent 28%)
-			);
-		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--panel-strong), transparent 20%);
+		height: 28px;
+		flex: 1;
 	}
 
 	.list {

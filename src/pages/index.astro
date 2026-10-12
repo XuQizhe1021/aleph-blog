@@ -24,7 +24,7 @@ const latestUpdateText = latestUpdateTs
 ---
 
 <Layout title="首页">
-	<section class="hero panel">
+	<section class="hero panel reveal">
 		<div class="hero-head">
 			<div class="hero-title">站点概览</div>
 			<div class="hero-actions">
@@ -35,11 +35,11 @@ const latestUpdateText = latestUpdateTs
 		<div class="stats">
 			<div class="stat">
 				<div class="stat-k muted">文章</div>
-				<div class="stat-v">{totalPosts}</div>
+				<div class="stat-v" data-count-up={totalPosts}>{totalPosts}</div>
 			</div>
 			<div class="stat">
 				<div class="stat-k muted">分类</div>
-				<div class="stat-v">{totalCategories}</div>
+				<div class="stat-v" data-count-up={totalCategories}>{totalCategories}</div>
 			</div>
 			<div class="stat">
 				<div class="stat-k muted">最近更新</div>
@@ -52,7 +52,7 @@ const latestUpdateText = latestUpdateTs
 		</div>
 	</section>
 
-	<section class="section">
+	<section class="section reveal">
 		<div class="section-head">
 			<h2>最新文章</h2>
 			<a class="muted" href={withBase('/posts')}>查看全部 →</a>
@@ -62,7 +62,7 @@ const latestUpdateText = latestUpdateTs
 		</div>
 	</section>
 
-	<section class="section">
+	<section class="section reveal">
 		<div class="section-head">
 			<h2>热门分类</h2>
 			<a class="muted" href={withBase('/categories')}>查看全部 →</a>
@@ -70,7 +70,7 @@ const latestUpdateText = latestUpdateTs
 		<div class="cats">
 			{categories.length ? (
 				categories.map((c) => (
-					<a class="cat panel" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
+					<a class="cat panel spot" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
 						<div class="cat-name">{c.category}</div>
 						<div class="cat-count muted">{c.count} 篇</div>
 					</a>

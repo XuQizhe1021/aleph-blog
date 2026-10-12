@@ -29,6 +29,7 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 <html lang="zh-CN">
 	<head>
 		<meta charset="UTF-8" />
+		<script is:inline>document.documentElement.classList.add('js');</script>
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
 		<link rel="canonical" href={canonicalUrl} />
@@ -430,5 +431,98 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 			<RewardPanel />
 			<SidebarWidgets />
 		</div>
+		<script is:inline>
+			(() => {
+				// 通用交互增强：分段控件气泡滑动、滚动渐显、聚光灯边框、数字滚动。
+				const bindSeg = (seg) => {
+					if (!(seg instanceof HTMLElement) || seg.dataset.segBound) return;
+					seg.dataset.segBound = '1';
+					const bubble = seg.querySelector('.seg-bubble');
+					const opts = Array.from(seg.querySelectorAll('.seg-opt'));
+					if (!bubble || !opts.length) return;
+					const position = () => {
+						const active = opts.find((o) => o.classList.contains('is-active')) || opts[0];
+						bubble.style.width = `${active.offsetWidth}px`;
+						bubble.style.transform = `translateX(${active.offsetLeft - bubble.offsetLeft}px)`;
+					};
+					seg.__segPosition = position;
+					requestAnimationFrame(position);
+					window.addEventListener('resize', position);
+				};
+
+				const bindReveal = () => {
+					const nodes = document.querySelectorAll('.reveal:not([data-reveal])');
+					if (!('IntersectionObserver' in window)) {
+						nodes.forEach((n) => n.classList.add('is-in'));
+						return;
+					}
+					const io = new IntersectionObserver(
+						(entries) => {
+							entries.forEach((e) => {
+								if (e.isIntersecting) {
+									e.target.classList.add('is-in');
+									io.unobserve(e.target);
+								}
+							});
+						},
+						{ threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+					);
+					nodes.forEach((n) => {
+						n.dataset.reveal = '1';
+						io.observe(n);
+					});
+				};
+
+				const bindSpot = () => {
+					document.querySelectorAll('.spot:not([data-spot])').forEach((el) => {
+						el.dataset.spot = '1';
+						el.addEventListener('mousemove', (e) => {
+							const r = el.getBoundingClientRect();
+							el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+							el.style.setProperty('--my', `${e.clientY - r.top}px`);
+						});
+					});
+				};
+
+				const bindCountUp = () => {
+					document.querySelectorAll('[data-count-up]').forEach((el) => {
+						if (el.dataset.counted) return;
+						el.dataset.counted = '1';
+						const target = Number(el.dataset.countUp || 0);
+						if (!Number.isFinite(target) || target === 0) return;
+						const dur = 900;
+						const start = performance.now();
+						const step = (now) => {
+							const p = Math.min(1, (now - start) / dur);
+							const eased = 1 - Math.pow(1 - p, 3);
+							el.textContent = String(Math.round(target * eased));
+							if (p < 1) requestAnimationFrame(step);
+						};
+						requestAnimationFrame(step);
+					});
+				};
+
+				const run = () => {
+					document.querySelectorAll('.seg').forEach(bindSeg);
+					bindReveal();
+					bindSpot();
+					bindCountUp();
+				};
+
+				// 供页面在切换分段选项后主动重定位气泡。
+				window.__SITE_REPOSITION_SEGS__ = () => {
+					document.querySelectorAll('.seg').forEach((s) => {
+						if (typeof s.__segPosition === 'function') s.__segPosition();
+					});
+				};
+
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', run, { once: true });
+				} else {
+					run();
+				}
+				document.addEventListener('astro:page-load', run);
+			})();
+		</script>
 	</body>
 </html>

@@ -136,6 +136,20 @@ function safeBasename(fileName) {
 	return base.trim().replace(/[\\/:*?"<>|]/g, '_');
 }
 
+function positionNavBubble() {
+	const list = document.querySelector('.admin-nav-list');
+	const bubble = list?.querySelector('.nav-bubble');
+	const active = list?.querySelector('[data-tree-item].active');
+	if (!list || !bubble || !active) return;
+	const lr = list.getBoundingClientRect();
+	const ar = active.getBoundingClientRect();
+	bubble.style.height = `${ar.height}px`;
+	bubble.style.top = `${ar.top - lr.top}px`;
+	// 左侧与宽度跟随激活项，子设置按钮缩进更靠右时气泡同样贴齐。
+	bubble.style.left = `${ar.left - lr.left}px`;
+	bubble.style.width = `${ar.width}px`;
+}
+
 function postMatches(p, q) {
 	const hay = [
 		p.slug,
@@ -183,6 +197,7 @@ function showAdminPage(page) {
 	document.querySelectorAll('[data-admin-page-panel]').forEach((panel) => {
 		panel.hidden = panel.getAttribute('data-admin-page-panel') !== page;
 	});
+	positionNavBubble();
 }
 
 function setSettingsCardByTree(group, target, tab) {
@@ -194,6 +209,7 @@ function setSettingsCardByTree(group, target, tab) {
 		const same = btn.getAttribute('data-settings-group') === group && btn.getAttribute('data-settings-card') === settingsCardState[group];
 		btn.classList.toggle('active', same);
 	});
+	positionNavBubble();
 }
 
 async function loadPosts() {
@@ -609,6 +625,11 @@ $filter?.addEventListener('input', () => renderList());
 
 $refresh?.addEventListener('click', () => loadPosts());
 
+$('theme-toggle')?.addEventListener('click', () => {
+	const current = window.__ADMIN_GET_THEME__?.() === 'dark' ? 'dark' : 'light';
+	window.__ADMIN_SET_THEME__?.(current === 'dark' ? 'light' : 'dark');
+});
+
 $editCategories?.addEventListener('keydown', (e) => {
 	if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $saveCategories?.click();
 });
@@ -825,6 +846,7 @@ document.querySelectorAll('[data-tree-toggle]').forEach((btn) => {
 		if (!(node instanceof HTMLElement)) return;
 		const open = node.dataset.open !== '0';
 		node.dataset.open = open ? '0' : '1';
+		positionNavBubble();
 	});
 });
 
@@ -990,6 +1012,8 @@ $manageCategories?.addEventListener('click', async () => {
 		}
 	});
 });
+
+window.addEventListener('resize', positionNavBubble);
 
 await Promise.all([loadPosts(), loadSiteSettings()]);
 showAdminPage(adminPage);

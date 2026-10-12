@@ -1,128 +1,712 @@
 ---
 import { getSiteSettings } from '../config/site-settings';
 import { withBase } from '../utils/paths';
+import { getPublicPosts, getAllCategories } from '../utils/blog';
 
 const settings = await getSiteSettings();
+const posts = await getPublicPosts();
+const categories = getAllCategories(posts);
+const postCount = posts.length;
+const categoryCount = categories.length;
+
+// 判断当前页是否命中导航项，用于高亮 dock 中的激活项。
+const currentPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const isActive = (href: string) => {
+	const target = withBase(href).replace(/\/+$/, '') || '/';
+	if (href === '/') return currentPath === target;
+	return currentPath === target || currentPath.startsWith(`${target}/`);
+};
+
+type NavItem = { href: string; label: string; badge?: string };
+const navItems: NavItem[] = [
+	{ href: '/', label: '首页' },
+	{ href: '/posts', label: '文章', badge: String(postCount) },
+	{ href: '/categories', label: '分类', badge: String(categoryCount) },
+	{ href: '/search', label: '搜索' },
+	{ href: '/about', label: '关于' },
+];
+if (settings.site_features.social.linkCard) navItems.push({ href: '/links', label: '链接' });
+if (settings.site_features.tools.timeMachine) navItems.push({ href: '/time-machine', label: '时光机' });
 ---
 
-{
-	settings.site_features.tools.sidebar ? (
-		<>
-			<button class="btn sidebar-launcher" type="button" data-sidebar-launcher>
-				{settings.site_texts.sidebarTitle}
+<aside class="dock" data-sidebar data-dock data-collapsed="0" data-open="0" aria-label="站点导航侧边栏">
+	<div class="dock-inner">
+		<div class="dock-top">
+			<button class="dock-toggle" type="button" data-dock-toggle aria-label="展开或收起侧边栏">
+				<svg class="dock-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="m9 6 6 6-6 6" />
+				</svg>
+				<span class="dock-label">收起</span>
 			</button>
-			<aside
-				class="site-sidebar panel"
-				data-sidebar
-				data-open={settings.site_theme_tweaks.sidebarDefaultCollapsed ? '0' : '1'}
-				aria-hidden={settings.site_theme_tweaks.sidebarDefaultCollapsed ? 'true' : 'false'}
-			>
-				<div class="sidebar-head">
-					<div class="sidebar-title">{settings.site_texts.sidebarTitle}</div>
-					<button class="btn sidebar-close" type="button" data-sidebar-close>关闭</button>
-				</div>
-				<div class="sidebar-body">
-					<div class="sidebar-row">
-						<div class="muted">{settings.site_texts.sidebarStatusLabel}</div>
-						<div class="badge">{settings.site_texts.sidebarStatusValue}</div>
-					</div>
-					{
-						settings.site_features.tools.timeMachine ? (
-							<div class="sidebar-row">
-								<div class="muted">快捷入口</div>
-								<a class="sidebar-link" href={withBase('/time-machine')}>时光机</a>
-							</div>
-						) : null
-					}
-					<div class="sidebar-row">
-						<div class="muted">{settings.site_texts.sidebarActivityLabel}</div>
-						<div class="muted">{settings.site_texts.sidebarActivityHint}</div>
-					</div>
-				</div>
-			</aside>
-		</>
-	) : null
-}
+			<button class="dock-close" type="button" data-sidebar-close aria-label="关闭导航">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+					<path d="M6 6l12 12M18 6 6 18" />
+				</svg>
+			</button>
+		</div>
+
+		<nav class="dock-nav" data-dock-nav aria-label="站点导航">
+			<span class="dock-bubble" aria-hidden="true"></span>
+			{navItems.map((item) => (
+				<a class="dock-item" href={withBase(item.href)} data-active={isActive(item.href) ? '1' : '0'} title={item.label}>
+					<span class="dock-icon" aria-hidden="true">
+						{item.href === '/' ? (
+							<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>
+						) : item.href === '/posts' ? (
+							<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /></svg>
+						) : item.href === '/categories' ? (
+							<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+						) : item.href === '/search' ? (
+							<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+						) : item.href === '/about' ? (
+							<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-3.5 3.6-6 8-6s8 2.5 8 6" /></svg>
+						) : item.href === '/links' ? (
+							<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1" /></svg>
+						) : (
+							<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8" /><path d="M12 7v5l3 3" /></svg>
+						)}
+					</span>
+					<span class="dock-label">{item.label}</span>
+					{item.badge ? <span class="dock-badge">{item.badge}</span> : null}
+				</a>
+			))}
+		</nav>
+
+		<div class="dock-widgets">
+			<div class="theme-seg" data-theme-seg role="group" aria-label="主题切换">
+				<span class="seg-bubble" aria-hidden="true"></span>
+				<button class="seg-opt" type="button" data-theme-set="light" aria-label="浅色主题">
+					<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+				</button>
+				<button class="seg-opt" type="button" data-theme-set="dark" aria-label="深色主题">
+					<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" /></svg>
+				</button>
+			</div>
+
+			<button class="dock-widget" type="button" data-widget-pop="status" aria-haspopup="true" aria-expanded="false" title={settings.site_texts.sidebarStatusLabel}>
+				<span class="dock-widget-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-6 4 12 2-6h6" /></svg>
+				</span>
+				<span class="dock-label">
+					<span class="dock-widget-k">{settings.site_texts.sidebarStatusLabel}</span>
+					<span class="dock-widget-v">{settings.site_texts.sidebarStatusValue}</span>
+				</span>
+			</button>
+			<div class="dock-pop" data-widget-pop-panel="status" hidden>
+				<div class="dock-pop-title">{settings.site_texts.sidebarStatusLabel}</div>
+				<div class="dock-pop-body">{settings.site_texts.sidebarStatusValue}</div>
+			</div>
+
+			<button class="dock-widget" type="button" data-widget-pop="activity" aria-haspopup="true" aria-expanded="false" title={settings.site_texts.sidebarActivityLabel}>
+				<span class="dock-widget-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M8 2v4M16 2v4M3 10h18" /></svg>
+				</span>
+				<span class="dock-label">
+					<span class="dock-widget-k">{settings.site_texts.sidebarActivityLabel}</span>
+					<span class="dock-widget-v">{settings.site_texts.sidebarActivityHint}</span>
+				</span>
+			</button>
+			<div class="dock-pop" data-widget-pop-panel="activity" hidden>
+				<div class="dock-pop-title">{settings.site_texts.sidebarActivityLabel}</div>
+				<div class="dock-pop-body">{settings.site_texts.sidebarActivityHint}</div>
+			</div>
+		</div>
+	</div>
+</aside>
+
+<script is:inline>
+	(() => {
+		const root = document.documentElement;
+		const COLLAPSE_KEY = 'dock_collapsed';
+		const EXPANDED_W = '232px';
+		const COLLAPSED_W = '68px';
+
+		const readCollapse = () => {
+			try {
+				const stored = localStorage.getItem(COLLAPSE_KEY);
+				if (stored === '1') return true;
+				if (stored === '0') return false;
+			} catch {}
+			// 兜底遵循后台「侧边栏默认收起」配置。
+			return Boolean(window.__SITE_SETTINGS__?.site_theme_tweaks?.sidebarDefaultCollapsed);
+		};
+
+		const applyCollapse = (collapsed, persist = true) => {
+			document.querySelectorAll('[data-dock]').forEach((dock) => {
+				if (dock instanceof HTMLElement) dock.dataset.collapsed = collapsed ? '1' : '0';
+			});
+			root.style.setProperty('--dock-w', collapsed ? COLLAPSED_W : EXPANDED_W);
+			document.querySelectorAll('[data-dock] [data-dock-toggle] .dock-label').forEach((el) => {
+				el.textContent = collapsed ? '展开' : '收起';
+			});
+			document.querySelectorAll('[data-dock] .dock-chev').forEach((el) => {
+				if (el instanceof HTMLElement) el.style.transform = collapsed ? 'none' : 'rotate(180deg)';
+			});
+			if (persist) {
+				try {
+					localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+				} catch {}
+			}
+			requestAnimationFrame(syncPositions);
+		};
+
+		// 气泡定位：首次落位禁用过渡（避免从顶部/零宽滑入），之后才启用滑动过渡。
+		const placeBubble = (bubble, styles) => {
+			if (bubble.dataset.placed === '1') {
+				Object.assign(bubble.style, styles);
+				return;
+			}
+			const prevTransition = bubble.style.transition;
+			bubble.style.transition = 'none';
+			Object.assign(bubble.style, styles);
+			void bubble.offsetHeight;
+			bubble.style.transition = prevTransition;
+			bubble.dataset.placed = '1';
+		};
+
+		// 主题分段控件：气泡定位（支持横/竖两种方向）。每次调用都重新查询节点。
+		const positionBubble = () => {
+			const seg = document.querySelector('[data-theme-seg]');
+			if (!seg) return;
+			const bubble = seg.querySelector('.seg-bubble');
+			const opts = Array.from(seg.querySelectorAll('.seg-opt'));
+			if (!bubble || !opts.length) return;
+			const theme = root.dataset.theme === 'dark' ? 'dark' : 'light';
+			const active = opts.find((o) => o.dataset.themeSet === theme) || opts[0];
+			opts.forEach((o) => o.classList.toggle('is-active', o === active));
+			const sr = seg.getBoundingClientRect();
+			const ar = active.getBoundingClientRect();
+			placeBubble(bubble, {
+				left: `${ar.left - sr.left}px`,
+				top: `${ar.top - sr.top}px`,
+				width: `${ar.width}px`,
+				height: `${ar.height}px`,
+			});
+		};
+
+		// 读取当前激活项相对导航容器的位置，供跨页滑动使用。
+		const readDockOffset = () => {
+			const nav = document.querySelector('[data-dock-nav]');
+			const active = nav?.querySelector('.dock-item[data-active="1"]');
+			if (!nav || !active) return null;
+			const nr = nav.getBoundingClientRect();
+			const ar = active.getBoundingClientRect();
+			return { top: ar.top - nr.top, height: ar.height };
+		};
+
+		// 功能页导航：气泡跟随当前激活项；跨页时从上个按钮位置滑到当前按钮位置。
+		const positionDockBubble = () => {
+			const nav = document.querySelector('[data-dock-nav]');
+			const bubble = nav?.querySelector('.dock-bubble');
+			const active = nav?.querySelector('.dock-item[data-active="1"]');
+			if (!nav || !bubble || !active) return;
+			const nr = nav.getBoundingClientRect();
+			const ar = active.getBoundingClientRect();
+			const target = { top: `${ar.top - nr.top}px`, height: `${ar.height}px` };
+
+			const prev = window.__DOCK_PREV_OFFSET__;
+			if (prev && typeof prev.top === 'number' && typeof prev.height === 'number') {
+				window.__DOCK_PREV_OFFSET__ = null;
+				bubble.style.transition = 'none';
+				bubble.style.top = `${prev.top}px`;
+				bubble.style.height = `${prev.height}px`;
+				bubble.dataset.placed = '1';
+				void bubble.offsetHeight;
+				bubble.style.transition = '';
+				requestAnimationFrame(() => {
+					bubble.style.top = target.top;
+					bubble.style.height = target.height;
+				});
+				return;
+			}
+
+			placeBubble(bubble, target);
+		};
+
+		const syncPositions = () => {
+			positionBubble();
+			positionDockBubble();
+		};
+
+		const setTheme = (theme) => {
+			const state = window.__SITE_UI_STATE__;
+			if (state && typeof state.setTheme === 'function') state.setTheme(theme);
+			else root.dataset.theme = theme;
+			requestAnimationFrame(positionBubble);
+		};
+
+		// 状态/活跃日历：收纳态下点击图标弹出小窗口展示内容。
+		const closeAllPops = () => {
+			document.querySelectorAll('[data-widget-pop-panel]').forEach((p) => {
+				if (p instanceof HTMLElement) {
+					p.dataset.open = '0';
+					p.hidden = true;
+				}
+			});
+			document.querySelectorAll('[data-widget-pop]').forEach((b) => {
+				b.setAttribute('aria-expanded', 'false');
+			});
+		};
+
+		const togglePop = (id) => {
+			const dock = document.querySelector('[data-dock]');
+			// 仅在收纳态弹出；展开态内容已内联展示。
+			if (dock?.dataset.collapsed !== '1') return;
+			const panel = document.querySelector(`[data-widget-pop-panel="${id}"]`);
+			const btn = document.querySelector(`[data-widget-pop="${id}"]`);
+			if (!(panel instanceof HTMLElement) || !(btn instanceof HTMLElement)) return;
+			const willOpen = panel.dataset.open !== '1';
+			closeAllPops();
+			if (!willOpen) return;
+			const br = btn.getBoundingClientRect();
+			panel.style.top = `${br.top}px`;
+			panel.hidden = false;
+			btn.setAttribute('aria-expanded', 'true');
+			requestAnimationFrame(() => {
+				panel.dataset.open = '1';
+			});
+		};
+
+		if (!window.__SITE_DOCK_BINDED__) {
+			window.__SITE_DOCK_BINDED__ = true;
+			document.addEventListener('click', (e) => {
+				const target = e.target;
+				if (!(target instanceof Element)) return;
+				const toggle = target.closest('[data-dock-toggle]');
+				if (toggle) {
+					const dock = document.querySelector('[data-dock]');
+					applyCollapse(dock?.dataset.collapsed !== '1');
+					closeAllPops();
+					return;
+				}
+				const opt = target.closest('[data-theme-seg] .seg-opt');
+				if (opt) {
+					setTheme(opt.getAttribute('data-theme-set') || 'light');
+					return;
+				}
+				const widgetBtn = target.closest('[data-widget-pop]');
+				if (widgetBtn) {
+					togglePop(widgetBtn.getAttribute('data-widget-pop'));
+					return;
+				}
+				// 点击弹窗外的其他位置关闭弹窗。
+				if (!target.closest('[data-widget-pop-panel]')) {
+					closeAllPops();
+				}
+			});
+			window.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') closeAllPops();
+			});
+			window.addEventListener('resize', syncPositions);
+			window.addEventListener('site:theme-change', () => positionBubble());
+			// 侧边栏宽度过渡结束后重新定位气泡，避免底色尺寸停留在过渡前。
+			document.addEventListener('transitionend', (e) => {
+				const t = e.target;
+				if (t instanceof HTMLElement && t.matches('[data-dock]') && e.propertyName === 'width') {
+					syncPositions();
+				}
+			});
+			// 切页前记录当前激活项位置，实现气泡从上个按钮滑动到当前按钮。
+			document.addEventListener('astro:before-swap', () => {
+				window.__DOCK_PREV_OFFSET__ = readDockOffset();
+			});
+		}
+
+		applyCollapse(readCollapse(), false);
+		requestAnimationFrame(syncPositions);
+		// SPA 切页后节点会被替换，重新应用折叠态并定位气泡。
+		document.addEventListener('astro:page-load', () => {
+			applyCollapse(readCollapse(), false);
+			requestAnimationFrame(syncPositions);
+		});
+		// 字体加载完成后宽度会变化，重新定位一次。
+		if (document.fonts?.ready) {
+			document.fonts.ready.then(syncPositions);
+		}
+	})();
+</script>
 
 <style>
-	.sidebar-launcher {
+	.dock {
 		position: fixed;
-		left: 12px;
-		top: calc(var(--site-header-height, 62px) + 12px);
-		z-index: 111;
-	}
-
-	.site-sidebar {
-		position: fixed;
-		top: var(--site-header-height, 62px);
 		left: 0;
-		height: calc(100dvh - var(--site-header-height, 62px));
-		width: min(220px, calc(100vw - 20px));
-		padding: 12px;
-		border-radius: 0;
+		top: var(--site-header-height, 56px);
+		bottom: 0;
+		width: var(--dock-w, 232px);
+		z-index: 90;
+		display: flex;
+		flex-direction: column;
 		border-right: 1px solid var(--border);
-		border-top: 0;
-		border-bottom: 0;
-		border-left: 0;
-		z-index: 112;
-		transform: translateX(-110%);
-		transition: transform 260ms ease;
-		display: grid;
-		grid-template-rows: auto 1fr;
+		background: color-mix(in oklab, var(--bg), transparent 2%);
+		transition: width 240ms cubic-bezier(0.34, 1.3, 0.64, 1);
+	}
+
+	.dock-inner {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
 		gap: 10px;
-		overflow: auto;
+		padding: 10px 10px 14px;
+		overflow-y: auto;
+		overflow-x: hidden;
 	}
 
-	html[data-sidebar-open='1'] .site-sidebar {
-		transform: translateX(0);
-	}
-
-	.sidebar-head {
+	.dock-top {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-	}
-
-	.sidebar-title {
-		font-weight: 700;
-	}
-
-	.sidebar-body {
-		display: grid;
-		gap: 10px;
-		align-content: start;
-	}
-
-	.sidebar-row {
-		display: grid;
 		gap: 6px;
-		padding: 10px;
-		border-radius: 12px;
-		border: 1px solid var(--border);
-		background: color-mix(in oklab, var(--panel-strong), transparent 22%);
 	}
 
-	.sidebar-link {
+	.dock-toggle {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 34px;
+		padding: 0 10px;
+		border-radius: 10px;
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--muted);
+		cursor: pointer;
+		font-size: 12px;
+		transition:
+			color 180ms ease,
+			background-color 180ms ease;
+	}
+
+	.dock-toggle:hover {
+		color: var(--text);
+		background: color-mix(in oklab, var(--panel-strong), transparent 30%);
+	}
+
+	.dock-chev {
+		flex: none;
+		transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	.dock-close {
+		display: none;
+		align-items: center;
+		justify-content: center;
+		width: 34px;
+		height: 34px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text);
+		cursor: pointer;
+	}
+
+	.dock-nav {
+		position: relative;
+		display: grid;
+		gap: 4px;
+	}
+
+	/* 功能页导航气泡：跟随激活项滑动，沿用现有渐变。 */
+	.dock-bubble {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 40px;
+		border-radius: 12px;
+		border: 1px solid color-mix(in oklab, var(--accent), var(--border) 30%);
+		background: linear-gradient(
+			90deg,
+			color-mix(in oklab, var(--accent), transparent 78%),
+			transparent
+		);
+		pointer-events: none;
+		z-index: 0;
+		transition:
+			top 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+			height 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	.dock-item {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		height: 40px;
+		padding: 0 10px;
+		border-radius: 12px;
+		border: 1px solid transparent;
+		color: var(--muted);
+		text-decoration: none;
+		overflow: hidden;
+		transition:
+			color 180ms ease,
+			background-color 180ms ease,
+			border-color 180ms ease;
+	}
+
+	.dock-item:hover {
+		color: var(--text);
+		text-decoration: none;
+		background: color-mix(in oklab, var(--panel-strong), transparent 30%);
+	}
+
+	.dock-item[data-active='1'] {
+		color: var(--text);
+		background: transparent;
+		border-color: transparent;
+	}
+
+	/* 激活项左侧的指示条，模拟软件侧边栏的当前页指示。 */
+	.dock-item[data-active='1']::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 50%;
+		width: 3px;
+		height: 18px;
+		border-radius: 999px;
+		background: var(--accent);
+		transform: translateY(-50%);
+	}
+
+	.dock-icon {
+		flex: none;
 		display: inline-flex;
 		align-items: center;
-		height: 34px;
-		padding: 0 12px;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+	}
+
+	.dock-label {
+		flex: 1;
+		min-width: 0;
+		font-size: 14px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.dock-badge {
+		flex: none;
+		min-width: 20px;
+		height: 20px;
+		padding: 0 6px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		border-radius: 999px;
 		border: 1px solid var(--border);
-		background: color-mix(in oklab, var(--panel-strong), transparent 15%);
-		text-decoration: none;
+		background: color-mix(in oklab, var(--panel-strong), transparent 20%);
+		color: var(--muted);
+		font-size: 11px;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.sidebar-link:hover {
-		border-color: color-mix(in oklab, var(--accent), var(--border) 35%);
-		text-decoration: none;
+	.dock-widgets {
+		margin-top: auto;
+		display: grid;
+		gap: 8px;
+		min-width: 0;
 	}
 
+	/* 主题切换：底色气泡滑动分段控件（展开横排、收纳竖排，仅图标）。 */
+	.theme-seg {
+		position: relative;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 2px;
+		padding: 3px;
+		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 26%);
+	}
+
+	.seg-bubble {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 0;
+		height: 0;
+		border-radius: 9px;
+		background: linear-gradient(
+			90deg,
+			color-mix(in oklab, var(--accent), transparent 10%),
+			color-mix(in oklab, var(--accent2), transparent 20%)
+		);
+		box-shadow: 0 6px 16px color-mix(in oklab, var(--accent), transparent 72%);
+		transition:
+			left 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+			top 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+			width 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+			height 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	.theme-seg .seg-opt {
+		position: relative;
+		z-index: 1;
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 28px;
+		border: 0;
+		border-radius: 9px;
+		background: transparent;
+		color: var(--muted);
+		cursor: pointer;
+		transition: color 180ms ease;
+	}
+
+	.theme-seg .seg-opt:hover {
+		color: var(--text);
+	}
+
+	.theme-seg .seg-opt.is-active {
+		color: var(--text);
+	}
+
+	.dock-widget {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+		padding: 8px 10px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 30%);
+		color: var(--text);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+		transition:
+			border-color 180ms ease,
+			background-color 180ms ease;
+	}
+
+	.dock-widget:hover {
+		border-color: color-mix(in oklab, var(--accent), var(--border) 30%);
+	}
+
+	.dock-widget-icon {
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		color: var(--accent);
+	}
+
+	.dock-widget-k {
+		display: block;
+		font-size: 11px;
+		color: var(--muted);
+	}
+
+	.dock-widget-v {
+		display: block;
+		font-size: 13px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	/* 收纳态弹出的小窗口：展示状态/活跃日历内容。 */
+	.dock-pop {
+		position: fixed;
+		z-index: 200;
+		left: calc(var(--dock-w, 68px) + 10px);
+		width: 210px;
+		padding: 10px 12px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: color-mix(in oklab, var(--panel-strong), transparent 6%);
+		box-shadow: var(--shadow);
+		backdrop-filter: blur(16px);
+		opacity: 0;
+		transform: translateX(-6px);
+		pointer-events: none;
+		transition:
+			opacity 180ms ease,
+			transform 180ms ease;
+	}
+
+	.dock-pop[data-open='1'] {
+		opacity: 1;
+		transform: none;
+		pointer-events: auto;
+	}
+
+	.dock-pop-title {
+		font-size: 12px;
+		color: var(--muted);
+		margin-bottom: 4px;
+	}
+
+	.dock-pop-body {
+		font-size: 13px;
+		line-height: 1.6;
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
+
+	/* 收纳态：仅展示图标轨，标签与角标隐藏，鼠标悬停通过 title 提示。 */
+	.dock[data-collapsed='1'] .dock-label,
+	.dock[data-collapsed='1'] .dock-badge {
+		display: none;
+	}
+
+	.dock[data-collapsed='1'] .dock-toggle {
+		justify-content: center;
+		padding: 0;
+	}
+
+	.dock[data-collapsed='1'] .dock-item {
+		justify-content: center;
+		padding: 0;
+	}
+
+	.dock[data-collapsed='1'] .dock-widget {
+		justify-content: center;
+		padding: 8px 0;
+	}
+
+	/* 收纳态：主题分段控件改为竖排，仅保留图标。 */
+	.dock[data-collapsed='1'] .theme-seg {
+		flex-direction: column;
+		gap: 2px;
+		padding: 3px;
+	}
+
+	.dock[data-collapsed='1'] .theme-seg .seg-opt {
+		flex: none;
+		width: 100%;
+		height: 26px;
+	}
+
+	/* 移动端：dock 变为离屏抽屉，由顶栏菜单按钮唤起。 */
 	@media (max-width: 980px) {
-		.sidebar-launcher,
-		.site-sidebar {
-			display: none;
+		.dock {
+			width: 240px;
+			transform: translateX(-105%);
+			transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+			box-shadow: 20px 0 60px color-mix(in oklab, var(--bg), transparent 20%);
+		}
+
+		html[data-sidebar-open='1'] .dock {
+			transform: translateX(0);
+		}
+
+		.dock-close {
+			display: inline-flex;
 		}
 	}
 </style>

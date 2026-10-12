@@ -6,7 +6,7 @@ const settings = await getSiteSettings();
 const links = settings.site_integrations.links.slice().sort((a, b) => a.order - b.order);
 ---
 
-<Layout title={settings.site_texts.linksPageTitle}>
+<Layout title={settings.site_texts.linksPageTitle} wide>
 	<section class="panel links">
 		<h1>{settings.site_texts.linksPageTitle}</h1>
 		<p class="muted">{settings.site_texts.linksPageIntro}</p>
@@ -40,15 +40,24 @@ const links = settings.site_integrations.links.slice().sort((a, b) => a.order - 
 
 	.grid {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 		gap: 12px;
 	}
 
 	.card {
-		padding: 14px;
+		padding: 16px;
 		display: grid;
 		gap: 8px;
 		text-decoration: none;
+		transition:
+			border-color 180ms ease,
+			transform 180ms ease;
+	}
+
+	.card:hover {
+		text-decoration: none;
+		border-color: color-mix(in oklab, var(--accent), var(--border) 30%);
+		transform: translateY(-2px);
 	}
 
 	.title {

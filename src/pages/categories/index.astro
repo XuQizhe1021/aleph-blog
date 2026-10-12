@@ -7,7 +7,7 @@ const posts = await getPublicPosts();
 const categories = getCategorySummaries(posts);
 ---
 
-<Layout title="分类">
+<Layout title="分类" wide>
 	<section class="head panel">
 		<div class="head-left">
 			<div class="title">分类</div>
@@ -24,11 +24,9 @@ const categories = getCategorySummaries(posts);
 		{categories.length ? (
 			categories.map((c) => (
 				<a class="cat panel" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
-					<div class="name">{c.category}</div>
-					<div class="meta-row">
-						<div class="muted">{c.count} 篇</div>
-						<div class="cat-date muted">最近更新 {c.latestDate.toLocaleDateString('zh-CN')}</div>
-					</div>
+					<span class="cat-count" data-count-up={c.count}>{c.count}</span>
+					<span class="cat-name">{c.category}</span>
+					<span class="cat-date muted">最近更新 {c.latestDate.toLocaleDateString('zh-CN')}</span>
 				</a>
 			))
 		) : (
@@ -112,15 +110,17 @@ const categories = getCategorySummaries(posts);
 	.grid {
 		margin-top: 14px;
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
 		gap: 12px;
 	}
 
 	.cat {
-		padding: 16px;
+		padding: 18px;
 		display: grid;
-		gap: 10px;
+		gap: 12px;
 		text-decoration: none;
+		position: relative;
+		overflow: hidden;
 	}
 
 	.cat:hover {
@@ -128,23 +128,36 @@ const categories = getCategorySummaries(posts);
 		border-color: color-mix(in oklab, var(--accent), var(--border) 30%);
 	}
 
-	.name {
-		font-weight: 750;
+	/* 分类卡片右上角一抹淡色光晕，增强层级。 */
+	.cat::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background: radial-gradient(circle at 100% 0%, color-mix(in oklab, var(--accent), transparent 88%), transparent 46%);
+		opacity: 0;
+		transition: opacity 180ms ease;
 	}
 
-	.meta-row {
-		display: grid;
-		gap: 4px;
+	.cat:hover::after {
+		opacity: 1;
+	}
+
+	.cat-count {
+		font-size: 32px;
+		font-weight: 800;
+		line-height: 1;
+		letter-spacing: -0.02em;
+		color: color-mix(in oklab, var(--accent), var(--text) 18%);
+	}
+
+	.cat-name {
+		font-weight: 750;
+		font-size: 16px;
 	}
 
 	.cat-date {
 		font-size: 12px;
-	}
-
-	@media (max-width: 980px) {
-		.grid {
-			grid-template-columns: 1fr;
-		}
 	}
 
 	.pager {

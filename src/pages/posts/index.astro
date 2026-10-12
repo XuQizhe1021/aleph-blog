@@ -14,55 +14,62 @@ const postSortMeta = posts.map((post) => ({
 }));
 ---
 
-<Layout title="文章">
-	<section class="head panel">
-		<div class="head-left">
-			<div class="title">文章</div>
-			<div class="muted">共 {posts.length} 篇</div>
-		</div>
-		<div class="pager" id="pager" hidden>
-			<button class="btn" id="prev" type="button">上一页</button>
-			<div class="muted" id="page-info"></div>
-			<button class="btn" id="next" type="button">下一页</button>
-		</div>
-	</section>
-
-	<section class="filters panel">
-		<div class="filter-head">
-			<div class="label muted">分类</div>
-			<div class="seg sort-switch" aria-label="排序方式">
-				<span class="seg-bubble" aria-hidden="true"></span>
-				<button class="seg-opt is-active" type="button" data-sort-toggle="latest">最新</button>
-				<button class="seg-opt" type="button" data-sort-toggle="updated">最近更新</button>
-				<button class="seg-opt" type="button" data-sort-toggle="title">标题</button>
-			</div>
-		</div>
-		<div class="chips">
-			<a class="chip" href={withBase('/posts')}>全部</a>
-			{categories.map((c) => (
-				<a class="chip" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
-					{c.category} <span class="muted">({c.count})</span>
-				</a>
-			))}
-		</div>
-	</section>
-
-	<section class="list" id="paged-list">
-		{posts.length ? (
-			posts.map((post, index) => (
-				<div
-					class="post-item"
-					data-title={postSortMeta[index]?.title.toLocaleLowerCase('zh-CN')}
-					data-pub={String(postSortMeta[index]?.pubTime ?? 0)}
-					data-updated={String(postSortMeta[index]?.activityTime ?? 0)}
-				>
-					<PostCard post={post} />
+<Layout title="文章" wide>
+	<div class="posts-layout">
+		<aside class="filters panel">
+			<div class="filter-title">筛选</div>
+			<div class="filter-group">
+				<div class="label muted">排序</div>
+				<div class="sort-list" role="group" aria-label="排序方式">
+					<button class="sort-btn is-active" type="button" data-sort-toggle="latest">最新</button>
+					<button class="sort-btn" type="button" data-sort-toggle="updated">最近更新</button>
+					<button class="sort-btn" type="button" data-sort-toggle="title">标题</button>
 				</div>
-			))
-		) : (
-			<div class="muted">暂无文章</div>
-		)}
-	</section>
+			</div>
+			<div class="filter-group">
+				<div class="label muted">分类</div>
+				<div class="chips">
+					<a class="chip" href={withBase('/posts')}>全部</a>
+					{categories.map((c) => (
+						<a class="chip" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
+							{c.category} <span class="muted">({c.count})</span>
+						</a>
+					))}
+				</div>
+			</div>
+		</aside>
+
+		<div class="posts-main">
+			<section class="head panel">
+				<div class="head-left">
+					<div class="title">文章</div>
+					<div class="muted">共 {posts.length} 篇</div>
+				</div>
+				<div class="pager" id="pager" hidden>
+					<button class="btn" id="prev" type="button">上一页</button>
+					<div class="muted" id="page-info"></div>
+					<button class="btn" id="next" type="button">下一页</button>
+				</div>
+			</section>
+
+			<section class="list" id="paged-list">
+				{posts.length ? (
+					posts.map((post, index) => (
+						<div
+							class="post-item"
+							data-title={postSortMeta[index]?.title.toLocaleLowerCase('zh-CN')}
+							data-pub={String(postSortMeta[index]?.pubTime ?? 0)}
+							data-updated={String(postSortMeta[index]?.activityTime ?? 0)}
+						>
+							<PostCard post={post} />
+						</div>
+					))
+				) : (
+					<div class="muted">暂无文章</div>
+				)}
+			</section>
+		</div>
+	</div>
 
 	<script is:inline>
 		(() => {
@@ -92,7 +99,6 @@ const postSortMeta = posts.map((post) => ({
 					btn.classList.toggle('is-active', active);
 					btn.setAttribute('aria-pressed', active ? 'true' : 'false');
 				});
-				window.__SITE_REPOSITION_SEGS__?.();
 			};
 			const applySort = () => {
 				const sorted = items.slice().sort((a, b) => {
@@ -122,7 +128,6 @@ const postSortMeta = posts.map((post) => ({
 				pager.hidden = pageCount <= 1;
 			};
 
-			// 排序切换后回到第一页，保持浏览节奏稳定。
 			sortButtons.forEach((btn) => {
 				btn.addEventListener('click', () => {
 					const nextMode = btn.dataset.sortToggle || 'latest';
@@ -160,40 +165,71 @@ const postSortMeta = posts.map((post) => ({
 </Layout>
 
 <style>
-	.head {
-		padding: 18px;
+	.posts-layout {
 		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: 12px;
-		align-items: center;
+		grid-template-columns: 240px minmax(0, 1fr);
+		gap: 16px;
+		align-items: start;
+	}
+
+	.filters {
+		padding: 16px;
+		display: grid;
+		gap: 16px;
 		position: sticky;
 		top: 72px;
-		z-index: 80;
+	}
+
+	.filter-title {
+		font-weight: 750;
+	}
+
+	.filter-group {
+		display: grid;
 		gap: 10px;
 	}
 
-	.title {
-		font-size: 24px;
-		font-weight: 800;
+	.label {
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.4px;
 	}
-	.head-left {
+
+	.sort-list {
 		display: grid;
 		gap: 6px;
 	}
 
-
-	.filters {
-		padding: 14px;
-		display: grid;
-		gap: 10px;
-	}
-
-	.filter-head {
+	.sort-btn {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
+		height: 34px;
+		padding: 0 12px;
+		border-radius: 10px;
+		border: 1px solid transparent;
+		background: color-mix(in oklab, var(--panel-strong), transparent 30%);
+		color: var(--muted);
+		cursor: pointer;
+		font-size: 13px;
+		text-align: left;
+		transition:
+			color 180ms ease,
+			background-color 180ms ease,
+			border-color 180ms ease;
+	}
+
+	.sort-btn:hover {
+		color: var(--text);
+	}
+
+	.sort-btn.is-active {
+		color: var(--text);
+		border-color: color-mix(in oklab, var(--accent), var(--border) 30%);
+		background: linear-gradient(
+			90deg,
+			color-mix(in oklab, var(--accent), transparent 82%),
+			color-mix(in oklab, var(--accent2), transparent 92%)
+		);
 	}
 
 	.chips {
@@ -220,20 +256,41 @@ const postSortMeta = posts.map((post) => ({
 		border-color: color-mix(in oklab, var(--accent), var(--border) 30%);
 	}
 
-	.sort-switch {
-		/* 视觉样式交由全局 .seg，这里仅补充响应式行为 */
+	.posts-main {
+		display: grid;
+		gap: 14px;
+		min-width: 0;
 	}
 
-	.sort-switch .seg-opt {
-		font-size: 12px;
-		height: 28px;
-		flex: 1;
+	.head {
+		padding: 18px;
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 12px;
+		align-items: center;
+		position: sticky;
+		top: 72px;
+		z-index: 80;
+	}
+
+	.title {
+		font-size: 24px;
+		font-weight: 800;
+	}
+
+	.head-left {
+		display: grid;
+		gap: 6px;
 	}
 
 	.list {
-		margin-top: 14px;
 		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 12px;
+	}
+
+	.post-item {
+		min-width: 0;
 	}
 
 	.pager {
@@ -243,17 +300,22 @@ const postSortMeta = posts.map((post) => ({
 		gap: 12px;
 	}
 
+	@media (max-width: 980px) {
+		.posts-layout {
+			grid-template-columns: 1fr;
+		}
+		.filters {
+			position: static;
+		}
+		.list {
+			grid-template-columns: 1fr;
+		}
+	}
+
 	@media (max-width: 720px) {
 		.head {
 			grid-template-columns: 1fr;
 			align-items: start;
-		}
-		.filter-head {
-			align-items: start;
-		}
-		.sort-switch {
-			width: 100%;
-			justify-content: space-between;
 		}
 		.pager {
 			width: 100%;

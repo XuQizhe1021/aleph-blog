@@ -13,9 +13,10 @@ import { getSiteSettings } from '../config/site-settings';
 type Props = {
 	title?: string;
 	description?: string;
+	wide?: boolean;
 };
 
-const { title, description } = Astro.props;
+const { title, description, wide = false } = Astro.props;
 const siteSettings = await getSiteSettings();
 const pageTitle = title ? `${title} · ${siteConfig.title}` : siteConfig.title;
 const pageDescription = description ?? siteConfig.description;
@@ -424,7 +425,7 @@ const vtEasing = siteSettings.site_theme_tweaks.viewTransitionEasing;
 	<body>
 		<div class="app-shell">
 			<SiteHeader />
-			<main class="app-main">
+			<main class:list={['app-main', { 'app-main--wide': wide }]}>
 				<slot />
 			</main>
 			<SiteFooter />

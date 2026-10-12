@@ -9,7 +9,7 @@ const allCategories = getAllCategories(posts);
 const categories = allCategories
 	.slice()
 	.sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, 'en', { sensitivity: 'base' }))
-	.slice(0, 4);
+	.slice(0, 6);
 const latest = posts.slice(0, 6);
 
 const totalPosts = posts.length;
@@ -23,7 +23,7 @@ const latestUpdateText = latestUpdateTs
 	: '—';
 ---
 
-<Layout title="首页">
+<Layout title="首页" wide>
 	<section class="hero panel reveal">
 		<div class="hero-head">
 			<div class="hero-title">站点概览</div>
@@ -52,41 +52,61 @@ const latestUpdateText = latestUpdateTs
 		</div>
 	</section>
 
-	<section class="section reveal">
-		<div class="section-head">
-			<h2>最新文章</h2>
-			<a class="muted" href={withBase('/posts')}>查看全部 →</a>
-		</div>
-		<div class="grid">
-			{latest.length ? latest.map((post) => <PostCard post={post} />) : <div class="muted">暂无文章</div>}
-		</div>
-	</section>
+	<div class="home-grid">
+		<section class="section reveal">
+			<div class="section-head">
+				<h2>最新文章</h2>
+				<a class="muted" href={withBase('/posts')}>查看全部 →</a>
+			</div>
+			<div class="grid">
+				{latest.length ? latest.map((post) => <PostCard post={post} />) : <div class="muted">暂无文章</div>}
+			</div>
+		</section>
 
-	<section class="section reveal">
-		<div class="section-head">
-			<h2>热门分类</h2>
-			<a class="muted" href={withBase('/categories')}>查看全部 →</a>
-		</div>
-		<div class="cats">
-			{categories.length ? (
-				categories.map((c) => (
-					<a class="cat panel spot" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
-						<div class="cat-name">{c.category}</div>
-						<div class="cat-count muted">{c.count} 篇</div>
-					</a>
-				))
-			) : (
-				<div class="muted">暂无分类</div>
-			)}
-		</div>
-	</section>
+		<section class="section reveal">
+			<div class="section-head">
+				<h2>热门分类</h2>
+				<a class="muted" href={withBase('/categories')}>查看全部 →</a>
+			</div>
+			<div class="cats">
+				{categories.length ? (
+					categories.map((c, i) => (
+						<a class="cat panel spot" href={withBase(`/categories/${encodeURIComponent(c.category)}`)}>
+							<span class="cat-rank">{String(i + 1).padStart(2, '0')}</span>
+							<span class="cat-name">{c.category}</span>
+							<span class="cat-count muted">{c.count} 篇</span>
+						</a>
+					))
+				) : (
+					<div class="muted">暂无分类</div>
+				)}
+			</div>
+		</section>
+	</div>
 </Layout>
 
 <style>
 	.hero {
-		padding: 22px 18px;
+		padding: 26px 22px;
 		display: grid;
-		gap: 12px;
+		gap: 18px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* 首页头部加入一层极淡的渐变光晕，作为视觉锚点。 */
+	.hero::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background:
+			radial-gradient(circle at 8% 0%, color-mix(in oklab, var(--accent), transparent 82%), transparent 42%),
+			radial-gradient(circle at 96% 20%, color-mix(in oklab, var(--accent2), transparent 86%), transparent 46%);
+	}
+
+	.hero > * {
+		position: relative;
 	}
 
 	.hero-head {
@@ -94,10 +114,11 @@ const latestUpdateText = latestUpdateTs
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
+		flex-wrap: wrap;
 	}
 
 	.hero-title {
-		font-size: clamp(18px, 4.2vw, 28px);
+		font-size: clamp(20px, 4.2vw, 30px);
 		font-weight: 800;
 		letter-spacing: 0.2px;
 	}
@@ -116,10 +137,10 @@ const latestUpdateText = latestUpdateTs
 	}
 
 	.stat {
-		padding: 12px 14px;
+		padding: 14px 16px;
 		border-radius: 14px;
 		border: 1px solid var(--border);
-		background: color-mix(in oklab, rgba(255, 255, 255, 0.06), transparent 15%);
+		background: color-mix(in oklab, var(--panel-strong), transparent 26%);
 		display: grid;
 		gap: 4px;
 	}
@@ -129,13 +150,23 @@ const latestUpdateText = latestUpdateTs
 	}
 
 	.stat-v {
-		font-size: 18px;
+		font-size: 20px;
 		font-weight: 800;
 		letter-spacing: 0.2px;
 	}
 
 	.section {
+		display: grid;
+		align-content: start;
+		gap: 2px;
+	}
+
+	.home-grid {
 		margin-top: 18px;
+		display: grid;
+		grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+		gap: 18px;
+		align-items: start;
 	}
 
 	.section-head {
@@ -158,15 +189,16 @@ const latestUpdateText = latestUpdateTs
 
 	.cats {
 		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 12px;
+		gap: 10px;
 	}
 
 	.cat {
-		padding: 14px 14px 12px;
-		text-decoration: none;
 		display: grid;
-		gap: 6px;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		gap: 12px;
+		padding: 13px 14px;
+		text-decoration: none;
 	}
 
 	.cat:hover {
@@ -174,20 +206,32 @@ const latestUpdateText = latestUpdateTs
 		text-decoration: none;
 	}
 
+	.cat-rank {
+		font-size: 12px;
+		font-weight: 800;
+		color: color-mix(in oklab, var(--accent), var(--muted) 20%);
+		font-variant-numeric: tabular-nums;
+	}
+
 	.cat-name {
 		font-weight: 700;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.cat-count {
 		font-size: 13px;
+		font-variant-numeric: tabular-nums;
 	}
 
 	@media (max-width: 980px) {
-		.grid {
+		.home-grid {
 			grid-template-columns: 1fr;
 		}
-		.cats {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
+		.grid {
+			grid-template-columns: 1fr;
 		}
 		.stats {
 			grid-template-columns: repeat(2, minmax(0, 1fr));

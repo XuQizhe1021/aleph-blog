@@ -3,25 +3,127 @@ import Layout from '../layouts/Layout.astro';
 import { siteConfig } from '../site.config';
 ---
 
-<Layout title="关于">
-	<section class="panel about">
-		<h1>关于</h1>
-		<p class="muted">
-			这里是 <strong>{siteConfig.author}</strong> 的个人博客。你可以在这里阅读文章、搜索、按分类浏览。
-		</p>
-		<p class="muted">
-			如果你喜欢我的博客风格，欢迎你使用我的开源项目<a href="https://github.com/XuQizhe1021/aleph-blog">aleph-blog</a>，欢迎你贡献代码。	
-		</p>
+<Layout title="关于" wide>
+	<section class="hero panel">
+		<div class="hero-k muted">ABOUT</div>
+		<h1 class="hero-title">关于</h1>
+		<div class="hero-sub muted">
+			这里是 <strong>{siteConfig.author}</strong> 的个人博客，你可以在这里阅读文章、搜索、按分类浏览。
+		</div>
 	</section>
+
+	<div class="about-grid">
+		<section class="panel prose-card">
+			<h2>关于本站</h2>
+			<p class="muted">
+				如果你喜欢我的博客风格，欢迎你使用我的开源项目
+				<a href="https://github.com/XuQizhe1021/aleph-blog" target="_blank" rel="noopener noreferrer">aleph-blog</a>，
+				欢迎你贡献代码。
+			</p>
+		</section>
+
+		<aside class="panel project">
+			<div class="project-k muted">开源项目</div>
+			<div class="project-name">aleph-blog</div>
+			<a
+				class="btn"
+				href="https://github.com/XuQizhe1021/aleph-blog"
+				target="_blank"
+				rel="noopener noreferrer">查看仓库 →</a
+			>
+		</aside>
+	</div>
 </Layout>
 
 <style>
-	.about {
-		padding: 18px;
+	.hero {
+		padding: 34px 26px;
+		display: grid;
+		gap: 14px;
+		position: relative;
+		overflow: hidden;
 	}
 
-	h1 {
-		margin: 0 0 10px;
+	.hero::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background:
+			radial-gradient(circle at 12% 0%, color-mix(in oklab, var(--accent), transparent 82%), transparent 42%),
+			radial-gradient(circle at 92% 40%, color-mix(in oklab, var(--accent2), transparent 86%), transparent 46%);
+	}
+
+	.hero > * {
+		position: relative;
+	}
+
+	.hero-k {
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 2px;
+		text-transform: uppercase;
+	}
+
+	.hero-title {
+		margin: 0;
+		font-size: clamp(28px, 6vw, 44px);
+		font-weight: 800;
+		letter-spacing: 0.2px;
+	}
+
+	.hero-sub {
+		max-width: 620px;
+		font-size: 16px;
+		line-height: 1.8;
+	}
+
+	.about-grid {
+		margin-top: 18px;
+		display: grid;
+		grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+		gap: 16px;
+		align-items: start;
+	}
+
+	.prose-card {
+		padding: 22px;
+	}
+
+	.prose-card h2 {
+		margin: 0 0 12px;
+	}
+
+	.prose-card p {
+		margin: 0;
+		line-height: 1.8;
+	}
+
+	.prose-card a {
+		color: var(--text);
+	}
+
+	.project {
+		padding: 22px;
+		display: grid;
+		gap: 12px;
+	}
+
+	.project-k {
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 1px;
+		text-transform: uppercase;
+	}
+
+	.project-name {
+		font-size: 22px;
+		font-weight: 800;
+	}
+
+	@media (max-width: 980px) {
+		.about-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>
-

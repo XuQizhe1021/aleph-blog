@@ -72,23 +72,15 @@ for (const group of timelineGroups) {
 }
 ---
 
-<Layout title="时光机">
-	<section class="panel tm">
-		<div class="head">
-			<h1>时光机</h1>
-			<div class="muted">按时间轴浏览文章</div>
-		</div>
-		{
-			settings.site_features.tools.timeMachine ? (
-				<>
-					<nav class="year-nav" aria-label="年份锚点">
-						{timelineGroups.map((group) => (
-							<a class="year-anchor" href={`#${group.anchorId}`}>
-								<span>{group.year}</span>
-								<span class="year-anchor-count muted">{group.total}</span>
-							</a>
-						))}
-					</nav>
+<Layout title="时光机" wide>
+	<div class="tm-layout">
+		<section class="panel tm">
+			<div class="head">
+				<h1>时光机</h1>
+				<div class="muted">按时间轴浏览文章</div>
+			</div>
+			{
+				settings.site_features.tools.timeMachine ? (
 					<div class="timeline">
 						{timelineGroups.map((group, groupIndex) => (
 							<section class="year-block" id={group.anchorId}>
@@ -121,19 +113,41 @@ for (const group of timelineGroups) {
 							</section>
 						))}
 					</div>
-				</>
-			) : (
-				<div class="muted">该功能已在后台关闭。</div>
-			)
+				) : (
+					<div class="muted">该功能已在后台关闭。</div>
+				)
+			}
+		</section>
+
+		{
+			settings.site_features.tools.timeMachine ? (
+				<nav class="year-nav panel" aria-label="年份锚点">
+					<div class="year-nav-title muted">年份</div>
+					{timelineGroups.map((group) => (
+						<a class="year-anchor" href={`#${group.anchorId}`}>
+							<span>{group.year}</span>
+							<span class="year-anchor-count muted">{group.total}</span>
+						</a>
+					))}
+				</nav>
+			) : null
 		}
-	</section>
+	</div>
 </Layout>
 
 <style>
+	.tm-layout {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 200px;
+		gap: 16px;
+		align-items: start;
+	}
+
 	.tm {
 		padding: 18px;
 		display: grid;
 		gap: 12px;
+		min-width: 0;
 	}
 
 	.head {
@@ -146,27 +160,41 @@ for (const group of timelineGroups) {
 	}
 
 	.year-nav {
-		display: flex;
-		flex-wrap: wrap;
+		padding: 16px;
+		display: grid;
 		gap: 8px;
+		position: sticky;
+		top: 72px;
+	}
+
+	.year-nav-title {
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 1px;
+		text-transform: uppercase;
+		margin-bottom: 4px;
 	}
 
 	.year-anchor {
-		display: inline-flex;
+		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 8px;
-		height: 30px;
+		height: 32px;
 		padding: 0 12px;
-		border-radius: 999px;
-		border: 1px solid var(--border);
-		background: color-mix(in oklab, var(--panel-strong), transparent 18%);
+		border-radius: 10px;
+		border: 1px solid transparent;
 		text-decoration: none;
 		font-size: 13px;
+		transition:
+			border-color 180ms ease,
+			background-color 180ms ease;
 	}
 
 	.year-anchor:hover {
 		text-decoration: none;
 		border-color: color-mix(in oklab, var(--accent), var(--border) 34%);
+		background: color-mix(in oklab, var(--panel-strong), transparent 30%);
 	}
 
 	.year-anchor-count {
@@ -254,6 +282,10 @@ for (const group of timelineGroups) {
 		text-decoration: none;
 	}
 
+	.item:hover {
+		border-color: color-mix(in oklab, var(--accent), var(--border) 30%);
+	}
+
 	.title {
 		font-weight: 700;
 	}
@@ -271,6 +303,26 @@ for (const group of timelineGroups) {
 
 	.item-date {
 		font-size: 13px;
+	}
+
+	@media (max-width: 980px) {
+		.tm-layout {
+			grid-template-columns: 1fr;
+		}
+		.year-nav {
+			position: static;
+			order: -1;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+		}
+		.year-nav-title {
+			width: 100%;
+			margin-bottom: 0;
+		}
+		.year-anchor {
+			border: 1px solid var(--border);
+		}
 	}
 
 	@media (max-width: 720px) {

@@ -306,9 +306,17 @@ if (settings.site_features.tools.timeMachine) navItems.push({ href: '/time-machi
 					syncPositions();
 				}
 			});
-			// 切页前记录当前激活项位置，实现气泡从上个按钮滑动到当前按钮。
-			document.addEventListener('astro:before-swap', () => {
+			// 切页前记录当前激活项位置，实现气泡从上个按钮滑动到当前按钮；
+			// 同时把折叠态与宽度变量带到新文档，避免新文档先按展开态渲染再收起造成抽搐。
+			document.addEventListener('astro:before-swap', (event) => {
 				window.__DOCK_PREV_OFFSET__ = readDockOffset();
+				const nextDocument = event?.newDocument || event?.detail?.newDocument;
+				if (!nextDocument?.documentElement) return;
+				const dock = document.querySelector('[data-dock]');
+				const collapsed = dock?.dataset.collapsed === '1';
+				nextDocument.documentElement.style.setProperty('--dock-w', collapsed ? COLLAPSED_W : EXPANDED_W);
+				const nextDock = nextDocument.querySelector('[data-dock]');
+				if (nextDock) nextDock.dataset.collapsed = collapsed ? '1' : '0';
 			});
 		}
 

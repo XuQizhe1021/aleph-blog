@@ -20,7 +20,7 @@ const { category } = Astro.params;
 const posts = (await getPublicPosts()).filter((p) => getCategories(p).includes(category));
 ---
 
-<Layout title={`分类：${category}`}>
+<Layout title={`分类：${category}`} wide>
 	<section class="head panel">
 		<div class="head-left">
 			<div class="title">{category}</div>
@@ -112,6 +112,7 @@ const posts = (await getPublicPosts()).filter((p) => getCategories(p).includes(c
 	.list {
 		margin-top: 14px;
 		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 12px;
 	}
 
@@ -120,6 +121,12 @@ const posts = (await getPublicPosts()).filter((p) => getCategories(p).includes(c
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
+	}
+
+	@media (max-width: 980px) {
+		.list {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	@media (max-width: 720px) {
